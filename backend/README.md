@@ -20,7 +20,7 @@ It's built on top of these libraries to provide those features:
 
 ## Setup
 
-The sonoUno server codebase is written for Python 3.10 and above. Don't forget about a venv as well. The `python` commands below assume you're pointing to your desired Python3 target.
+The sonoUno server codebase is written for Python 3.10 and above.
 
 First we'll need to install our requirements.
 
@@ -56,7 +56,7 @@ docker run -d --net host mongo
 ```
 To run the test suite:
 ```bash
-python run pytest
+poetry run pytest
 ```
 
 
