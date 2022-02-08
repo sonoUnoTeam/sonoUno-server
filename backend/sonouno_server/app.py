@@ -33,5 +33,5 @@ app = FastAPI(openapi_tags=tags_metadata)
 @app.on_event("startup")
 async def app_init():
     """Initialize application services"""
-    app.db = AsyncIOMotorClient(CONFIG.mongo_uri).account
+    app.db = AsyncIOMotorClient(CONFIG.mongo_uri).sonouno
     await init_beanie(app.db, document_models=[User, Transform])
