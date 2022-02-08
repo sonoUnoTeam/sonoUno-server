@@ -1,0 +1,29 @@
+version: "3"
+
+services:
+
+  mongodb:
+    image: mongo:latest
+    container_name: mongodb
+    restart: always
+    hostname: mongodb
+    volumes:
+      - ../mongodb/mongod.conf:/etc/mongod.conf
+      - ../mongodb/initdb.d/:/docker-entrypoint-initdb.d/
+      - ../mongodb-data/:/data/db/
+#      - ../mongodb-logs/:/var/log/mongodb/
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME
+      - MONGO_INITDB_ROOT_PASSWORD
+      - MONGO_INITDB_DATABASE
+      - MONGO_INITDB_USERNAME
+      - MONGO_INITDB_PASSWORD
+    ports:
+      - "27017:27017"
+    networks:
+      - backend-network
+    command: ["-f", "/etc/mongod.conf"]
+
+networks:
+  backend-network:
+    driver: bridge

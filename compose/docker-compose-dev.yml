@@ -1,0 +1,4 @@
+services:
+  sonouno-server:
+    volumes:
+      - ../backend:/code

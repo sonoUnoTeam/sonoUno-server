@@ -1,0 +1,5 @@
+mongodb-data/
+mongodb-logs/
+
+.idea/
+.vscode/
