@@ -1,7 +1,5 @@
-#! /usr/bin/env bash
+#! /usr/bin/env sh
 
-# Exit in case of error
-set -e
-
-export SONOUNO_PATH="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
+export SONOUNO_PATH=$(dirname "$(readlink -f "$0")")
 docker-compose -f ${SONOUNO_PATH}/docker-stack.yml down -v --remove-orphans
+docker network prune --force

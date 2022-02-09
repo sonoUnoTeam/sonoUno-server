@@ -1,9 +1,9 @@
-#! /usr/bin/env bash
+#! /usr/bin/env sh
+# This script should only be run for the CI or local development
 
-# Exit in case of error
-set -e
-
-export SONOUNO_PATH="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
-${SONOUNO_PATH}/run.sh -d
+export SONOUNO_PATH=$(dirname "$(readlink -f "$0")")
+export SALT='$2b$12$Sft/hbpkZnDMTQIkDLyH1.'
+INSTALL_DEV=true ${SONOUNO_PATH}/build.sh
+docker-compose -f ${SONOUNO_PATH}/docker-stack.yml -f ${SONOUNO_PATH}/docker-compose-test.yml up -d
 docker-compose -f ${SONOUNO_PATH}/docker-stack.yml exec -T sonouno-server bash /code/scripts/run-tests.sh "$@"
 ${SONOUNO_PATH}/rm.sh

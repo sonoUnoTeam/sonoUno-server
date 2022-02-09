@@ -1,5 +1,4 @@
 #! /usr/bin/env bash
 set -ex
 
-poetry run python gen_salt.py
-poetry run pytest --cov=app --cov-report=term-missing "${@}"
+poetry run pytest --cov=sonouno_server --cov-report=term-missing "${@}"

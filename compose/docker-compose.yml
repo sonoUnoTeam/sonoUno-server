@@ -1,9 +1,13 @@
 version: "3"
 
+networks:
+  backend-network:
+    driver: bridge
+
 services:
 
   sonouno-server:
-    image: ${SONOUNO_SERVER_IMAGE:-esap-db}:${SONOUNO_SERVER_TAG:-latest}
+    image: ${SONOUNO_SERVER_IMAGE:-sonounoserver}:${SONOUNO_SERVER_TAG:-latest}
     container_name: sonouno-server
     stdin_open: true  # docker run -i
     tty: true         # docker run -t
@@ -13,12 +17,12 @@ services:
       - SENTRY_DSN=https://nowhere.com
       - PROJECT_NAME=sonoUno Server
       - TEST_MONGO_URI=mongodb://${MONGO_INITDB_ROOT_USERNAME}:${MONGO_INITDB_ROOT_PASSWORD}@mongodb:27017/
+      - SALT
     build:
       context: ../backend
       args:
-        INSTALL_DEV: ${INSTALL_DEV:-false}
+        - INSTALL_DEV
     command: bash -c "/code/scripts/prepare-app.sh && uvicorn sonouno_server.main:app --root-path=${ROOTPATH:-/} --port 8001 --host 0.0.0.0 --reload"
-    #command: bash -c "while true; do sleep 1; done"  # Infinite loop to keep container live doing nothing
     ports:
       - "8001:8001"
     networks:
@@ -64,7 +68,3 @@ services:
       - ME_CONFIG_MONGODB_URL=mongodb://${MONGO_INITDB_ROOT_USERNAME}:${MONGO_INITDB_ROOT_PASSWORD}@mongodb:27017/
     networks:
       - backend-network
-
-networks:
-  backend-network:
-    driver: bridge

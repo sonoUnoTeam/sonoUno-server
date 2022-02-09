@@ -1,0 +1,40 @@
+image:
+  name: docker/compose:1.29.2
+
+services:
+  - docker:dind
+
+stages:
+  - test
+  - build
+
+variables:
+  DOMAIN: localhost
+
+before_script:
+  - docker version
+  - docker-compose version
+
+tests:
+  stage: test
+  variables:
+    SALT: "$2b$12$Sft/hbpkZnDMTQIkDLyH1."
+  script:
+    - compose/run-tests-backend.sh
+
+build:
+  stage: build
+  variables:
+    DOMAIN: backend
+    INSTALL_DEV: "false"
+    SONOUNO_SERVER_IMAGE: ${CI_REGISTRY_IMAGE}
+
+  artifacts:
+    paths:
+      - compose/docker-stack.yml
+  script:
+    - compose/build.sh
+    - echo ${CI_JOB_TOKEN} | docker login -u "${CI_REGISTRY_USER}" --password-stdin "${CI_REGISTRY}"
+    - docker tag ${SONOUNO_SERVER_IMAGE}:latest ${SONOUNO_SERVER_IMAGE}:${CI_COMMIT_BRANCH}-${CI_COMMIT_SHORT_SHA}
+    - docker push ${SONOUNO_SERVER_IMAGE}:latest
+    - docker push ${SONOUNO_SERVER_IMAGE}:${CI_COMMIT_BRANCH}-${CI_COMMIT_SHORT_SHA}
