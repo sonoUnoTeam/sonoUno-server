@@ -16,7 +16,11 @@ services:
       - SERVER_HOST=https://${DOMAIN?Variable not set}
       - SENTRY_DSN=https://nowhere.com
       - PROJECT_NAME=sonoUno Server
-      - TEST_MONGO_URI=mongodb://${MONGO_INITDB_ROOT_USERNAME}:${MONGO_INITDB_ROOT_PASSWORD}@mongodb:27017/
+      - MONGO_INITDB_ROOT_USERNAME
+      - MONGO_INITDB_ROOT_PASSWORD
+      - MONGO_INITDB_USERNAME
+      - MONGO_INITDB_PASSWORD
+      - MONGO_INITDB_DATABASE
       - SALT
     build:
       context: ../backend

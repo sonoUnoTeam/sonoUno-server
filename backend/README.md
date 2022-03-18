@@ -59,9 +59,6 @@ To run the test suite:
 poetry run pytest
 ```
 
-
-You can also connect to a remote server if you're running tests in a CI/CD pipeline. Just set the `TEST_MONGO_URI` in the environment. This value defaults to localhost and is only checked in the test suite. It should **never** use your `MONGO_URI`.
-
 [MongoDB]: https://www.mongodb.com "MongoDB NoSQL homepage"
 [FastAPI]: https://fastapi.tiangolo.com "FastAPI web framework"
 [Beanie ODM]: https://roman-right.github.io/beanie/ "Beanie object-document mapper"

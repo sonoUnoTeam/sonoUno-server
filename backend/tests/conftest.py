@@ -13,12 +13,6 @@ from fastapi import FastAPI
 from httpx import AsyncClient
 
 from sonouno_server.config import CONFIG
-
-
-# Override config settings before loading the app
-CONFIG.testing = True
-CONFIG.mongo_uri = config("TEST_MONGO_URI", default="mongodb://localhost:27017")
-
 from sonouno_server.main import app
 
 

@@ -11,7 +11,8 @@ class Settings(BaseModel):
     """Server config settings."""
 
     # Mongo Engine settings
-    mongo_uri = config("MONGO_URI")
+    mongo_database = config('MONGO_INITDB_DATABASE')
+    mongo_uri = f'mongodb://{config("MONGO_INITDB_ROOT_USERNAME")}:{config("MONGO_INITDB_ROOT_PASSWORD")}@mongodb:27017'
 
     # Security settings
     authjwt_secret_key = config("SECRET_KEY")

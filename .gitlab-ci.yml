@@ -17,8 +17,6 @@ before_script:
 
 tests:
   stage: test
-  variables:
-    SALT: "$2b$12$Sft/hbpkZnDMTQIkDLyH1."
   script:
     - compose/run-tests-backend.sh
 
@@ -28,7 +26,6 @@ build:
     DOMAIN: backend
     INSTALL_DEV: "false"
     SONOUNO_SERVER_IMAGE: ${CI_REGISTRY_IMAGE}
-
   artifacts:
     paths:
       - compose/docker-stack.yml
