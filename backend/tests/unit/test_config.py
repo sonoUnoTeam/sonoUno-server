@@ -6,4 +6,4 @@ def test_testing():
 
 
 def test_mongo_uri():
-    assert CONFIG.mongo_uri == 'mongodb://test_root:test_root@mongodb:27017'
+    assert CONFIG.mongo_uri == 'mongodb://test_user:test_user@mongodb:27017/sonouno'
