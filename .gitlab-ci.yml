@@ -5,8 +5,9 @@ services:
   - docker:dind
 
 stages:
-  - test
+#  - test
   - build
+  - deploy
 
 variables:
   DOMAIN: localhost
@@ -15,10 +16,10 @@ before_script:
   - docker version
   - docker-compose version
 
-tests:
-  stage: test
-  script:
-    - compose/run-tests-backend.sh
+#tests:
+#  stage: test
+#  script:
+#    - compose/run-tests-backend.sh
 
 build:
   stage: build
@@ -30,8 +31,38 @@ build:
     paths:
       - compose/docker-stack.yml
   script:
+    - echo ${CI_REGISTRY_IMAGE}
     - compose/build.sh
     - echo ${CI_JOB_TOKEN} | docker login -u "${CI_REGISTRY_USER}" --password-stdin "${CI_REGISTRY}"
     - docker tag ${SONOUNO_SERVER_IMAGE}:latest ${SONOUNO_SERVER_IMAGE}:${CI_COMMIT_BRANCH}-${CI_COMMIT_SHORT_SHA}
     - docker push ${SONOUNO_SERVER_IMAGE}:latest
     - docker push ${SONOUNO_SERVER_IMAGE}:${CI_COMMIT_BRANCH}-${CI_COMMIT_SHORT_SHA}
+
+deploy-stag:
+  stage: deploy
+  environment:
+    name: staging
+    url: http://37.187.38.200
+  before_script:
+    - echo $DOCKER_HOST
+    - export OLD_DOCKER_HOST=$DOCKER_HOST
+    - which ssh-agent || ( apk add --update --no-cache openssh-client )
+    - eval $(ssh-agent -s)
+    - echo "$SSH_PRIVATE_KEY" | tr -d '\r' | ssh-add -
+    - mkdir -p ~/.ssh
+    - chmod 700 ~/.ssh
+    - echo "$SSH_SERVER_HOSTKEYS" > ~/.ssh/known_hosts
+    - chmod 644 ~/.ssh/known_hosts
+    - docker context create --docker host=ssh://debian@37.187.38.200 --description="Staging engine" stag-engine
+    - unset DOCKER_HOST
+    - docker context use stag-engine
+  script:
+    - docker info
+    - docker-compose -f compose/docker-stack.yml down -v --remove-orphan
+    - docker network prune --force
+    - docker-compose -f compose/docker-stack.yml up -d
+  after_script:
+    - DOCKER_HOST=$OLD_DOCKER_HOST
+    - docker context use default
+  only:
+    - main

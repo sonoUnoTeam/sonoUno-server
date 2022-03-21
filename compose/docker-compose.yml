@@ -1,5 +1,8 @@
 version: "3"
 
+volumes:
+  sonouno-db-data:
+
 networks:
   backend-network:
     driver: bridge
@@ -20,25 +23,23 @@ services:
       - MONGO_INITDB_PASSWORD
       - MONGO_INITDB_DATABASE
       - SALT
+    ports:
+      - "8001:8001"
+    networks:
+      - backend-network
     build:
       context: ../backend
       args:
         - INSTALL_DEV
     command: bash -c "/code/scripts/prepare-app.sh && uvicorn sonouno_server.main:app --root-path=${ROOTPATH:-/} --port 8001 --host 0.0.0.0 --reload"
-    ports:
-      - "8001:8001"
-    networks:
-      - backend-network
 
   mongodb:
-    image: mongo:latest
+    image: ${SONOUNO_SERVER_IMAGE:-sonounoserver}-mongo:${SONOUNO_SERVER_TAG:-latest}
     container_name: mongodb
     restart: always
     hostname: mongodb
     volumes:
-      - ../mongodb/mongod.conf:/etc/mongod.conf
-      - ../mongodb/initdb.d/:/docker-entrypoint-initdb.d/
-      - ../mongodb-data/:/data/db/
+      - sonouno-db-data:/data/db/
 #      - ../mongodb-logs/:/var/log/mongodb/
     environment:
       - MONGO_INITDB_ROOT_USERNAME
@@ -51,14 +52,15 @@ services:
     networks:
       - backend-network
     command: ["-f", "/etc/mongod.conf"]
+    build:
+      context: ../mongodb
 
   mongo-express:
-    image: mongo-express
+    image: ${SONOUNO_SERVER_IMAGE:-sonounoserver}-mongo-express:${SONOUNO_SERVER_TAG:-latest}
+    container_name: mongo-express
     restart: always
     ports:
       - 8081:8081
-    volumes:
-      - ../mongo-express/docker-entrypoint.sh:/docker-entrypoint.sh
     depends_on:
       - mongodb
     environment:
@@ -70,3 +72,5 @@ services:
       - ME_CONFIG_MONGODB_URL=mongodb://${MONGO_INITDB_ROOT_USERNAME}:${MONGO_INITDB_ROOT_PASSWORD}@mongodb:27017
     networks:
       - backend-network
+    build:
+      context: ../mongo-express
