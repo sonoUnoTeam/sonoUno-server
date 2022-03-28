@@ -1,5 +1,4 @@
-"""
-Common test utilities
+"""Common test utilities
 """
 
 from httpx import AsyncClient

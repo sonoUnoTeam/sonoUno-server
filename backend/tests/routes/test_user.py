@@ -9,7 +9,6 @@ from tests.data import add_empty_user
 from tests.util import auth_headers
 
 
-@pytest.mark.asyncio
 async def test_user_get(client: AsyncClient) -> None:
     """Test user endpoint returns authorized user"""
     await add_empty_user()
@@ -21,7 +20,6 @@ async def test_user_get(client: AsyncClient) -> None:
     assert data["email"] == email
 
 
-@pytest.mark.asyncio
 async def test_user_update(client: AsyncClient) -> None:
     """Test updating user fields"""
     await add_empty_user()
@@ -47,7 +45,6 @@ async def test_user_update(client: AsyncClient) -> None:
     assert data[key] == name
 
 
-@pytest.mark.asyncio
 async def test_user_delete(client: AsyncClient) -> None:
     """Test deleting a user from the database"""
     await add_empty_user()

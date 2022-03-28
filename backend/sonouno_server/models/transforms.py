@@ -6,7 +6,7 @@
 from datetime import datetime
 from typing import Optional, Any
 
-from beanie import Document, Link, Indexed
+from beanie import Document, Link, Indexed, PydanticObjectId
 from pydantic import BaseModel
 
 from .users import UserOut
@@ -38,4 +38,4 @@ class TransformIn(BaseModel):
 
 class Transform(TransformIn, Document):
     """The transform, as stored in the database and returned to the user."""
-    user_id: Indexed(str)
+    user_id: Indexed(PydanticObjectId)

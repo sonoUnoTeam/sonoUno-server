@@ -8,7 +8,6 @@ from tests.data import add_empty_user
 from tests.util import auth_payload
 
 
-@pytest.mark.asyncio
 async def test_not_authorized(client: AsyncClient) -> None:
     """Test user not authorized if required"""
     resp = await client.get("/users/me")
@@ -18,7 +17,6 @@ async def test_not_authorized(client: AsyncClient) -> None:
     assert resp.status_code == 422
 
 
-@pytest.mark.asyncio
 async def test_refresh(client: AsyncClient) -> None:
     """Test refresh token updates access token"""
     await add_empty_user()
