@@ -5,7 +5,7 @@ services:
   - docker:dind
 
 stages:
-#  - test
+  - test
   - build
   - deploy
 
@@ -16,10 +16,10 @@ before_script:
   - docker version
   - docker-compose version
 
-#tests:
-#  stage: test
-#  script:
-#    - compose/run-tests-backend.sh
+tests:
+  stage: test
+  script:
+    - compose/run-tests-backend.sh
 
 build:
   stage: build
