@@ -38,7 +38,7 @@ build:
     - docker push ${SONOUNO_SERVER_IMAGE}:latest
     - docker push ${SONOUNO_SERVER_IMAGE}:${CI_COMMIT_BRANCH}-${CI_COMMIT_SHORT_SHA}
 
-deploy-stag:
+deploy-staging:
   stage: deploy
   environment:
     name: staging
@@ -53,9 +53,9 @@ deploy-stag:
     - chmod 700 ~/.ssh
     - echo "$SSH_SERVER_HOSTKEYS" > ~/.ssh/known_hosts
     - chmod 644 ~/.ssh/known_hosts
-    - docker context create --docker host=ssh://debian@37.187.38.200 --description="Staging engine" stag-engine
+    - docker context create --docker host=ssh://debian@37.187.38.200 --description="Staging docker engine" engine-staging
     - unset DOCKER_HOST
-    - docker context use stag-engine
+    - docker context use engine-staging
   script:
     - docker info
     - docker-compose -f compose/docker-stack.yml down -v --remove-orphan

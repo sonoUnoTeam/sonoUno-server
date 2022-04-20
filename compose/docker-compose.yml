@@ -1,11 +1,36 @@
-version: "3"
+version: "3.7"
 
+## By default this config uses default local driver,
+## For custom volumes replace with volume driver configuration.
 volumes:
   sonouno-db-data:
+  data1-1:
+  data1-2:
+  data2-1:
+  data2-2:
 
 networks:
   backend-network:
     driver: bridge
+
+
+# Settings and configurations that are common for all containers
+x-minio-common: &minio-common
+  image: quay.io/minio/minio:RELEASE.2022-04-16T04-26-02Z
+  command: server --console-address ":9001" http://minio{1...2}/data{1...2}
+  expose:
+    - "9000"
+    - "9001"
+  networks:
+    - backend-network
+  environment:
+    - MINIO_ROOT_USER
+    - MINIO_ROOT_PASSWORD
+  healthcheck:
+    test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+    interval: 30s
+    timeout: 20s
+    retries: 3
 
 services:
 
@@ -23,8 +48,8 @@ services:
       - MONGO_INITDB_PASSWORD
       - MONGO_INITDB_DATABASE
       - SALT
-    ports:
-      - "8001:8001"
+    expose:
+      - 8001
     networks:
       - backend-network
     build:
@@ -74,3 +99,36 @@ services:
       - backend-network
     build:
       context: ../mongo-express
+
+  # starts 2 docker containers running minio server instances.
+  # using nginx reverse proxy, load balancing, you can access
+  # it through port 9000.
+  minio1:
+    <<: *minio-common
+    container_name: minio1
+    volumes:
+      - data1-1:/data1
+      - data1-2:/data2
+
+  minio2:
+    <<: *minio-common
+    container_name: minio2
+    volumes:
+      - data2-1:/data1
+      - data2-2:/data2
+
+  nginx:
+    image: ${SONOUNO_SERVER_IMAGE:-sonounoserver}-nginx:${SONOUNO_SERVER_TAG:-latest}
+    container_name: nginx
+    ports:
+      - "80:80"
+      - "9000:9000"
+      - "9001:9001"
+    networks:
+      - backend-network
+    build:
+      context: ../nginx
+    depends_on:
+      - sonouno-server
+      - minio1
+      - minio2
