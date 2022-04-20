@@ -58,7 +58,7 @@ deploy-staging:
     - docker context use engine-staging
   script:
     - docker info
-    - docker-compose -f compose/docker-stack.yml down -v --remove-orphan
+    - docker-compose -f compose/docker-stack.yml down --remove-orphan
     - docker network prune --force
     - docker-compose -f compose/docker-stack.yml up -d
   after_script:
