@@ -55,7 +55,7 @@ class User(UserOut, Document):
         return False
 
     @property
-    def created(self) -> datetime:
+    def created_at(self) -> datetime:
         """Datetime user was created from ID"""
         return self.id.generation_time
 

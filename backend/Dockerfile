@@ -22,6 +22,9 @@ ARG INSTALL_DEV=false
 RUN bash -c "if [ \"${INSTALL_DEV}\" == 'true' ] ; then poetry install --no-root ; else poetry install --no-root --no-dev ; fi"
 RUN bash -c "poetry run pip install fastapi-mail==1.0.2"
 
+# Make some libraries available in the transform interpretor.
+RUN bash -c "poetry run pip install requests pandas astropy gwpy tables"
+
 # For development, Jupyter remote kernel, Hydrogen
 # Using inside the container:
 # jupyter lab --ip=0.0.0.0 --allow-root --NotebookApp.custom_display_url=http://127.0.0.1:8888

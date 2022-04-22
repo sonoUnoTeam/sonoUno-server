@@ -9,8 +9,7 @@ from beanie import init_beanie
 from motor.motor_asyncio import AsyncIOMotorClient
 
 from .config import CONFIG
-from .models.transforms import Transform
-from .models.users import User
+from .models import Job, Transform, User
 
 tags_metadata = [
     {
@@ -35,4 +34,4 @@ async def app_init():
     """Initialize application services"""
     client = AsyncIOMotorClient(CONFIG.mongo_uri)
     app.db = getattr(client, CONFIG.mongo_database)
-    await init_beanie(app.db, document_models=[User, Transform])
+    await init_beanie(app.db, document_models=[Job, Transform, User])

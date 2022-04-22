@@ -42,7 +42,18 @@ async def added_user() -> User:
 def create_transform(user: User, public: bool = True, source: str = '') -> Transform:
     """Transform factory"""
     if not source:
-        source = '@exposed\ndef func():\n    pass'
+        source = """
+from sonouno_server import exposed
+
+@exposed
+def inner_stage(x):
+    return x + 1
+    
+@exposed
+def pipeline(param1: str, param2: int = 3):
+    start = inner_stage(param2)
+    return param1, [start, start + 10]
+    """
     transform = Transform(
         name=str(uuid4()),
         description=str(uuid4()),
@@ -50,7 +61,7 @@ def create_transform(user: User, public: bool = True, source: str = '') -> Trans
         public=public,
         language='python',
         source=source,
-        entry_point={'name': 'func'},
+        entry_point={'name': 'pipeline'},
     )
     return transform
 
