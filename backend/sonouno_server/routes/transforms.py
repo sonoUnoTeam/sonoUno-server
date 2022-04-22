@@ -1,4 +1,4 @@
-"""User router.
+"""Transforms router.
 """
 
 from fastapi import APIRouter, Depends, HTTPException, Response
@@ -8,6 +8,7 @@ from beanie.operators import Or
 from ..models.transforms import TransformIn, Transform
 from ..models.users import User
 from ..util.current_user import current_user
+from ..util.transform_builder import TransformBuilder
 
 router = APIRouter(prefix="/transforms", tags=["Transforms"])
 
@@ -15,14 +16,7 @@ router = APIRouter(prefix="/transforms", tags=["Transforms"])
 @router.post("", response_model=Transform)
 async def create(transform_in: TransformIn, user: User = Depends(current_user)):
     """Creates a new transform."""
-    transform = Transform(
-        user_id=user.id,
-        name=transform_in.name,
-        description=transform_in.description,
-        public=transform_in.public,
-        nodes=transform_in.nodes,
-        edges=transform_in.edges,
-    )
+    transform = TransformBuilder(transform_in, user).create()
     await transform.create()
     return transform
 

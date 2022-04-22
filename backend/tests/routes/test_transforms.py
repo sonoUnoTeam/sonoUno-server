@@ -1,15 +1,15 @@
 import pytest
 
-from sonouno_server.models import Transform
+from sonouno_server.models import ExposedFunction, Transform
 
 from ..data import added_transform
 
 
 def test_create(user, public_transform):
     assert user.id == public_transform.user_id
-    assert public_transform.nodes == []
-    assert public_transform.edges == []
     assert public_transform.public
+    assert public_transform.language == 'python'
+    assert isinstance(public_transform.entry_point, ExposedFunction)
 
 
 async def test_get_public_from_creator(client, user_auth, public_transform):
