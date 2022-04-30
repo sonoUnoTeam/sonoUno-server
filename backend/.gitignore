@@ -1,3 +1,8 @@
+# Specific project files
+_version.py
+requirements.txt
+requirements-package.txt
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

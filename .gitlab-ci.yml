@@ -11,6 +11,10 @@ stages:
 
 variables:
   DOMAIN: localhost
+  SONOUNO_SERVER_IMAGE: ${CI_REGISTRY_IMAGE}:${CI_COMMIT_BRANCH}-latest
+  MONGODB_IMAGE: ${CI_REGISTRY_IMAGE}/mongodb:${CI_COMMIT_BRANCH}-latest
+  MONGOEXPRESS_IMAGE: ${CI_REGISTRY_IMAGE}/mongoexpress:${CI_COMMIT_BRANCH}-latest
+  NGINX_IMAGE: ${CI_REGISTRY_IMAGE}/nginx:${CI_COMMIT_BRANCH}-latest
 
 before_script:
   - docker version
@@ -21,22 +25,26 @@ tests:
   script:
     - compose/run-tests-backend.sh
 
-build:
+build-and-publish:
   stage: build
-  variables:
-    DOMAIN: backend
-    INSTALL_DEV: "false"
-    SONOUNO_SERVER_IMAGE: ${CI_REGISTRY_IMAGE}
-  artifacts:
-    paths:
-      - compose/docker-stack.yml
+  before_script:
+    - apk add --no-cache py3-pip py3-wheel py3-cryptography git
+    - ln -s python3 /usr/bin/python
+    - python --version
+    - pip install --upgrade --ignore-installed distlib
+    - pip install --no-cache-dir "poetry==1.2.0b1" poetry-dynamic-versioning
+    - cd backend
+    - poetry version
   script:
-    - echo ${CI_REGISTRY_IMAGE}
-    - compose/build.sh
+    - ../compose/build.sh
+    - poetry config repositories.gitlab "$CI_API_V4_URL/projects/$CI_PROJECT_ID/packages/pypi"
+    - poetry config http-basic.gitlab gitlab-ci-token "$CI_JOB_TOKEN"
+    - poetry publish --repository gitlab
     - echo ${CI_JOB_TOKEN} | docker login -u "${CI_REGISTRY_USER}" --password-stdin "${CI_REGISTRY}"
-    - docker tag ${SONOUNO_SERVER_IMAGE}:latest ${SONOUNO_SERVER_IMAGE}:${CI_COMMIT_BRANCH}-${CI_COMMIT_SHORT_SHA}
-    - docker push ${SONOUNO_SERVER_IMAGE}:latest
-    - docker push ${SONOUNO_SERVER_IMAGE}:${CI_COMMIT_BRANCH}-${CI_COMMIT_SHORT_SHA}
+    - docker push ${SONOUNO_SERVER_IMAGE}
+    - docker push ${MONGODB_IMAGE}
+    - docker push ${MONGOEXPRESS_IMAGE}
+    - docker push ${NGINX_IMAGE}
 
 deploy-staging:
   stage: deploy
@@ -57,10 +65,14 @@ deploy-staging:
     - unset DOCKER_HOST
     - docker context use engine-staging
   script:
+    - echo ${CI_JOB_TOKEN} | docker login -u "${CI_REGISTRY_USER}" --password-stdin "${CI_REGISTRY}"
     - docker info
-    - docker-compose -f compose/docker-stack.yml down --remove-orphan
+    - cd compose
+    - docker-compose -f docker-compose.yml --env-file .env config > docker-stack.yml
+    - docker-compose -f docker-stack.yml pull
+    - docker-compose -f docker-stack.yml down --remove-orphan
     - docker network prune --force
-    - docker-compose -f compose/docker-stack.yml up -d
+    - docker-compose -f docker-stack.yml up -d
   after_script:
     - DOCKER_HOST=$OLD_DOCKER_HOST
     - docker context use default

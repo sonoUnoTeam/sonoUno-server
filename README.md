@@ -27,7 +27,7 @@ This app provides a basic account API on top of a [MongoDB]() store with the fol
 * Start the stack with Docker Compose:
 
 ```bash
-compose/run.sh
+compose/run-dev.sh
 ```
 
 * Now you can open your browser and interact with these URLs:

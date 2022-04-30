@@ -1,4 +1,6 @@
 services:
   sonouno-server:
+    build:
+      dockerfile: Dockerfile-dev
     volumes:
       - ../backend:/code

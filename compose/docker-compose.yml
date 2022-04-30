@@ -35,7 +35,7 @@ x-minio-common: &minio-common
 services:
 
   sonouno-server:
-    image: ${SONOUNO_SERVER_IMAGE:-sonounoserver}:${SONOUNO_SERVER_TAG:-latest}
+    image: ${SONOUNO_SERVER_IMAGE:-sonounoserver:latest}
     container_name: sonouno-server
     stdin_open: true  # docker run -i
     tty: true         # docker run -t
@@ -48,18 +48,21 @@ services:
       - MONGO_INITDB_PASSWORD
       - MONGO_INITDB_DATABASE
       - SALT
+      - SECRET_KEY
+      - MAIL_CONSOLE
+      - MAIL_USERNAME
+      - MAIL_PASSWORD
     expose:
       - 8001
     networks:
       - backend-network
     build:
       context: ../backend
-      args:
-        - INSTALL_DEV
+      dockerfile: Dockerfile
     command: bash -c "/code/scripts/prepare-app.sh && uvicorn sonouno_server.main:app --root-path=${ROOTPATH:-/} --port 8001 --host 0.0.0.0 --reload"
 
   mongodb:
-    image: ${SONOUNO_SERVER_IMAGE:-sonounoserver}-mongo:${SONOUNO_SERVER_TAG:-latest}
+    image: ${MONGODB_IMAGE:-sonounoserver/mongodb:latest}
     container_name: mongodb
     restart: always
     hostname: mongodb
@@ -81,7 +84,7 @@ services:
       context: ../mongodb
 
   mongo-express:
-    image: ${SONOUNO_SERVER_IMAGE:-sonounoserver}-mongo-express:${SONOUNO_SERVER_TAG:-latest}
+    image: ${MONGOEXPRESS_IMAGE:-sonounoserver/mongoexpress:latest}
     container_name: mongo-express
     restart: always
     ports:
@@ -118,7 +121,7 @@ services:
       - data2-2:/data2
 
   nginx:
-    image: ${SONOUNO_SERVER_IMAGE:-sonounoserver}-nginx:${SONOUNO_SERVER_TAG:-latest}
+    image: ${NGINX_IMAGE:-sonounoserver/nginx:latest}
     container_name: nginx
     ports:
       - "80:80"

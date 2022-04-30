@@ -2,9 +2,8 @@
 # This script should only be used for local development.
 # For the development, staging and production environments, the SALT must be a secret.
 
-# Exit in case of error
-set -e
+set -ex
 
 export SONOUNO_PATH=$(dirname "$(readlink -f "$0")")
-INSTALL_DEV=true ${SONOUNO_PATH}/build.sh
+${SONOUNO_PATH}/build-dev.sh
 docker-compose -f ${SONOUNO_PATH}/docker-stack.yml up "$@"

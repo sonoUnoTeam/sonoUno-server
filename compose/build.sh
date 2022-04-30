@@ -1,17 +1,13 @@
 #! /usr/bin/env sh
-
-# Exit in case of error
-set -e
+set -ex
 
 export SONOUNO_PATH=$(dirname "$(readlink -f "$0")")
-: ${INSTALL_DEV:="false"}
-if [ $INSTALL_DEV = false ]
-then
-  INSTALL_DEV=
-fi
-ARGS="-f ${SONOUNO_PATH}/docker-compose.yml ${INSTALL_DEV:+-f ${SONOUNO_PATH}/docker-compose-dev.yml}"
 
-DOMAIN=backend \
-docker-compose $ARGS --env-file ${SONOUNO_PATH}/.env config > ${SONOUNO_PATH}/docker-stack.yml
+cd ${SONOUNO_PATH}/../backend
+poetry build
+poetry export --no-plugins > requirements.txt
+echo "sonouno_server=="$(poetry version --short) > requirements-package.txt
+cd -
 
+docker-compose -f ${SONOUNO_PATH}/docker-compose.yml --env-file ${SONOUNO_PATH}/.env config > ${SONOUNO_PATH}/docker-stack.yml
 docker-compose -f ${SONOUNO_PATH}/docker-stack.yml build
