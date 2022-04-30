@@ -23,7 +23,7 @@ RUN bash -c "if [ \"${INSTALL_DEV}\" == 'true' ] ; then poetry install --no-root
 RUN bash -c "poetry run pip install fastapi-mail==1.0.2"
 
 # Make some libraries available in the transform interpretor.
-RUN bash -c "poetry run pip install requests pandas astropy gwpy tables"
+RUN bash -c "poetry run pip install requests pandas astropy"
 
 # For development, Jupyter remote kernel, Hydrogen
 # Using inside the container:
