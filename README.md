@@ -76,6 +76,81 @@ To run the test suite:
 compose/run-tests-backend.sh
 ```
 
+## Example
+
+In this example, we will create a user and get an access token in order to create
+a dummy transform in the MongoDB database. Thi transform is then applied on data stored in the
+MinIO servers.
+
+```python
+import requests
+
+SERVER_URL='http://37.187.38.200'
+EMAIL = "test_email@test.com"
+PASSWORD = 'password'
+SOURCE = """
+import pickle
+import requests
+from sonouno_server import exposed
+
+def loader(url: str):
+    response = requests.get(url)
+    response.raise_for_status()
+    return pickle.loads(response.content)
+
+@exposed
+def inner_stage(x):
+    return x + 1
+
+@exposed
+def pipeline(url: str, param2: int = 3):
+    data = loader(url)
+    start = inner_stage(param2)
+    return data, [start, start + 10]
+"""
+
+# Create user if it doesn't exist
+user = {
+    'email': EMAIL,
+    'password': PASSWORD,
+}
+response = requests.post(f'{SERVER_URL}/users', json=user)
+if response.status == 409:
+    print(f'Email {EMAIL} is already registered.')
+else:
+    response.raise_for_status()
+
+# Log in user
+response = requests.post(f'{SERVER_URL}/iam/login', json=user)
+response.raise_for_status()
+access_token = response.json()['access_token']
+session = requests.Session()
+session.headers['Authorization'] = f'Bearer {access_token}'
+
+# Create transform
+transform = {
+    'name': "Test transformation",
+    'public': True,
+    'language': "python",
+    'source': SOURCE,
+    'entry_point': {"name": "pipeline"}
+}
+response = session.post(f'{SERVER_URL}/transforms', json=transform)
+response.raise_for_status()
+transform_id = response.json()['_id']
+
+# Create job
+job = {
+    'transform_id': transform_id,
+    'inputs': {
+        'url': f'{SERVER_URL}:9000/test-bucket-staging/list.pickle',
+    },
+}
+response = session.post(f'{SERVER_URL}/jobs', json=job)
+response.raise_for_status()
+print(response.json()['results'])
+```
+
 [MongoDB]: https://www.mongodb.com "MongoDB NoSQL homepage"
 [FastAPI]: https://fastapi.tiangolo.com "FastAPI web framework"
 [Beanie ODM]: https://roman-right.github.io/beanie/ "Beanie object-document mapper"
