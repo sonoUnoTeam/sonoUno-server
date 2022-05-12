@@ -519,6 +519,14 @@ anyio = ">=3.0.0,<4"
 full = ["itsdangerous", "jinja2", "python-multipart", "pyyaml", "requests"]
 
 [[package]]
+name = "streamunolib"
+version = "0.1.0"
+description = "Library of generic transform components."
+category = "main"
+optional = false
+python-versions = ">=3.7,<4.0"
+
+[[package]]
 name = "toml"
 version = "0.10.2"
 description = "Python Library for Tom's Obvious, Minimal Language"
@@ -573,7 +581,7 @@ multidict = ">=4.0"
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.8"
-content-hash = "d8fa2886b99e52b290eb015a4c42a0bd45e9487bf525d4cce2d00afe7cbe84f9"
+content-hash = "13cc08728324d0e523413ff0c2617645ffcecd0fc81c719e1db4787a2789c977"
 
 [metadata.files]
 anyio = [
@@ -1064,6 +1072,10 @@ sniffio = [
 starlette = [
     {file = "starlette-0.17.1-py3-none-any.whl", hash = "sha256:26a18cbda5e6b651c964c12c88b36d9898481cd428ed6e063f5f29c418f73050"},
     {file = "starlette-0.17.1.tar.gz", hash = "sha256:57eab3cc975a28af62f6faec94d355a410634940f10b30d68d31cb5ec1b44ae8"},
+]
+streamunolib = [
+    {file = "streamunolib-0.1.0-py3-none-any.whl", hash = "sha256:2141cdd99c2420ce2fdb490da693c72f416fb6a34ba619d55d514db96f4edda5"},
+    {file = "streamunolib-0.1.0.tar.gz", hash = "sha256:02c9c492b20644105282dd32659f5bbf1dbe5630f8f91fa1e05ed7447ac20e23"},
 ]
 toml = [
     {file = "toml-0.10.2-py2.py3-none-any.whl", hash = "sha256:806143ae5bfb6a3c6e736a764057db0e6a0e05e338b5630894a5f779cabb4f9b"},

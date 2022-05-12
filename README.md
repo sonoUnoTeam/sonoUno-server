@@ -91,7 +91,7 @@ PASSWORD = 'password'
 SOURCE = """
 import pickle
 import requests
-from sonouno_server import exposed
+from streamunolib import exposed
 
 def loader(url: str):
     response = requests.get(url)

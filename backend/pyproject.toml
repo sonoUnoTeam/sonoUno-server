@@ -16,6 +16,7 @@ pydantic = {extras = ["email"], version = "^1.9.0"}
 python-decouple = "^3.6"
 networkx = "^2.8"
 apischema = "^0.17.5"
+streamunolib = "^0.1.0"
 
 [tool.poetry.dev-dependencies]
 pytest = "^6.2.5"
