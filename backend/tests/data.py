@@ -43,7 +43,7 @@ def create_transform(user: User, public: bool = True, source: str = '') -> Trans
     """Transform factory"""
     if not source:
         source = """
-from sonouno_server import exposed
+from streamunolib import exposed
 
 @exposed
 def inner_stage(x):

@@ -89,6 +89,7 @@ SERVER_URL='http://37.187.38.200'
 EMAIL = "test_email@test.com"
 PASSWORD = 'password'
 SOURCE = """
+from typing import NamedTuple
 import pickle
 import requests
 from streamunolib import exposed
@@ -99,14 +100,18 @@ def loader(url: str):
     return pickle.loads(response.content)
 
 @exposed
-def inner_stage(x):
-    return x + 1
+def inner_stage(x, increment):
+    return [_ + increment for _ in x]
+
+class PipelineOutput(NamedTuple):
+    processed_data: list
+    metadata: dict
 
 @exposed
-def pipeline(url: str, param2: int = 3):
+def pipeline(url: str, increment: int = 3) -> PipelineOutput:
     data = loader(url)
-    start = inner_stage(param2)
-    return data, [start, start + 10]
+    processed_data = inner_stage(data, increment)
+    return processed_data, {'status': 'Successfully incremented', 'length': len(data)}
 """
 
 # Create user if it doesn't exist

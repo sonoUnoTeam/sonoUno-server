@@ -1,13 +1,13 @@
 import inspect
-from typing import Any
+from typing import Any, get_args, get_origin
 from types import FunctionType
 
 from apischema import schema
-from apischema.json_schema import deserialization_schema
-from sonouno_server.models import User
-from sonouno_server.util.call_dependencies import CallDependencyResolver
+from apischema.json_schema import serialization_schema
 
-from ..models import ExposedFunction, Input, Transform, TransformIn
+from ..models import ExposedFunction, Input, Output, Transform, TransformIn, User
+from ..types import AnyType
+from ..util.call_dependencies import CallDependencyResolver
 
 
 def exposed(f: FunctionType) -> FunctionType:
@@ -81,6 +81,7 @@ class TransformBuilder:
             fq_name=self.extract_fq_name(func),
             description=self.extract_doctring_from_func(func),
             inputs=self.extract_inputs_from_func(func),
+            outputs=self.extract_outputs_from_func(func),
             exposed_functions=self.extract_exposed_function_dependencies(
                 func, exposed_funcs, dependencies),
         )
@@ -110,9 +111,43 @@ class TransformBuilder:
         input_ = Input(
             name=name,
             fq_name=name,
-            json_schema=deserialization_schema(annotation, schema=schema_for_default),
+            json_schema=serialization_schema(annotation, schema=schema_for_default),
         )
         return input_
+
+    def extract_outputs_from_func(self, func: FunctionType) -> list[Output]:
+        tp_return = func.__annotations__.get('return')
+        tp_outputs = self.extract_output_types(tp_return)
+        return [self.extract_output(n, tp) for n, tp in tp_outputs.items()]
+
+    @staticmethod
+    def extract_output_types(tp: AnyType) -> dict:
+        if not tp:
+            return {0: Any}
+
+        # named tuple case
+        if isinstance(tp, type) and issubclass(tp, tuple) and hasattr(tp, '_fields'):
+            annotations = getattr(tp, '__annotations__', {})
+            return {_: annotations.get(_, Any) for _ in tp._fields}
+
+        origin = get_origin(tp)
+        if origin is None:
+            return {0: tp}
+
+        args = get_args(tp)
+        if issubclass(origin, tuple):
+            return {i: tp for i, tp in enumerate(args)}
+
+        return {0: tp}
+
+    @staticmethod
+    def extract_output(name: str, tp: AnyType) -> Output:
+        output = Output(
+            name=name,
+            json_schema=serialization_schema(tp),
+        )
+        return output
+
 
     def extract_exposed_function_dependencies(
         self,

@@ -17,10 +17,16 @@ class Input(BaseModel):
     json_schema: dict
 
 
+class Output(BaseModel):
+    name: str
+    json_schema: dict
+
+
 class ExposedFunction(BaseModel):
     name: str
     description: str = ''
     inputs: list[Input] | None = None
+    outputs: list[Output] | None = None
     exposed_functions: list[ExposedFunction] | None = None
 
 
