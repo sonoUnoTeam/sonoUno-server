@@ -31,6 +31,10 @@ dirty = true
 bump = true
 style = "pep440"
 
+[build-system]
+requires = ["poetry>=1.1.0", "poetry-dynamic-versioning"]
+build-backend = "poetry.masonry.api"
+
 [tool.pytest.ini_options]
 minversion = "6.0"
 addopts = "-ra -q"
@@ -39,6 +43,5 @@ testpaths = [
 ]
 asyncio_mode = "auto"
 
-[build-system]
-requires = ["poetry>=1.1.0", "poetry-dynamic-versioning"]
-build-backend = "poetry.masonry.api"
+[tool.isort]
+known_first_party = ["sonouno_server", "streamunolib"]

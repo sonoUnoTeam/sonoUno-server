@@ -1,19 +1,19 @@
 """Transforms router.
 """
 
-from fastapi import APIRouter, Depends, HTTPException, Response
 from beanie import PydanticObjectId
 from beanie.operators import Or
+from fastapi import APIRouter, Depends, HTTPException, Response
 
-from ..models.transforms import TransformIn, Transform
+from ..models.transforms import Transform, TransformIn
 from ..models.users import User
 from ..util.current_user import current_user
 from ..util.transform_builder import TransformBuilder
 
-router = APIRouter(prefix="/transforms", tags=["Transforms"])
+router = APIRouter(prefix='/transforms', tags=['Transforms'])
 
 
-@router.post("", response_model=Transform)
+@router.post('', response_model=Transform)
 async def create(transform_in: TransformIn, user: User = Depends(current_user)):
     """Creates a new transform."""
     transform = TransformBuilder(transform_in, user).create()
@@ -21,7 +21,7 @@ async def create(transform_in: TransformIn, user: User = Depends(current_user)):
     return transform
 
 
-@router.get("", response_model=list[Transform])
+@router.get('', response_model=list[Transform])
 async def list_(user: User = Depends(current_user)):
     """Lists the transforms either public or belonging to a user."""
     criteria = Or(Transform.user_id == user.id, Transform.public == True)
@@ -29,7 +29,7 @@ async def list_(user: User = Depends(current_user)):
     return transforms
 
 
-@router.get("/{id}", response_model=Transform)
+@router.get('/{id}', response_model=Transform)
 async def get(id: PydanticObjectId, user: User = Depends(current_user)):
     """Gets a transform."""
     transform = await Transform.get(document_id=id)
@@ -40,7 +40,7 @@ async def get(id: PydanticObjectId, user: User = Depends(current_user)):
     return transform
 
 
-@router.delete("/{id}")
+@router.delete('/{id}')
 async def get(id: PydanticObjectId, user: User = Depends(current_user)):
     """Gets a transform."""
     transform = await Transform.get(document_id=id)

@@ -1,6 +1,6 @@
 import inspect
-from typing import Any, get_args, get_origin
 from types import FunctionType
+from typing import Any, get_args, get_origin
 
 from apischema import schema
 from apischema.json_schema import serialization_schema
@@ -16,7 +16,11 @@ def exposed(f: FunctionType) -> FunctionType:
 
 
 def is_exposed(func: Any) -> bool:
-    return isinstance(func, FunctionType) and hasattr(func, '__exposed__') and func.__exposed__
+    return (
+        isinstance(func, FunctionType)
+        and hasattr(func, '__exposed__')
+        and func.__exposed__
+    )
 
 
 class TransformBuilder:
@@ -45,7 +49,7 @@ class TransformBuilder:
             description=self.transform_in.description or entry_point_func.__doc__ or '',
             public=self.transform_in.public,
             language=self.transform_in.language,
-            source = self.transform_in.source,
+            source=self.transform_in.source,
             entry_point=self.extract_exposed_function_model(
                 entry_point_func,
                 exposed_funcs,
@@ -62,10 +66,12 @@ class TransformBuilder:
             exec(self.transform_in.source, {}, locals_)
         except SyntaxError:
             import sys
+
             print(repr(self.transform_in.source), file=sys.stderr)
             raise
         output = [
-            v for v in locals_.values()
+            v
+            for v in locals_.values()
             if isinstance(v, FunctionType) and v.__name__ != 'exposed'
         ]
         return output
@@ -83,11 +89,12 @@ class TransformBuilder:
             inputs=self.extract_inputs_from_func(func),
             outputs=self.extract_outputs_from_func(func),
             exposed_functions=self.extract_exposed_function_dependencies(
-                func, exposed_funcs, dependencies),
+                func, exposed_funcs, dependencies
+            ),
         )
 
     def extract_fq_name(self, func: FunctionType) -> str:
-        #return f'.{node.name}'
+        # return f'.{node.name}'
         return func.__name__
 
     def extract_doctring_from_func(self, func: FunctionType) -> str:
@@ -147,7 +154,6 @@ class TransformBuilder:
             json_schema=serialization_schema(tp),
         )
         return output
-
 
     def extract_exposed_function_dependencies(
         self,

@@ -21,4 +21,4 @@ def get_config():
 @app.exception_handler(AuthJWTException)
 def jwt_exception_handler(request: Request, exc: AuthJWTException):
     """Returns any authentication failures."""
-    return JSONResponse(status_code=exc.status_code, content={"detail": exc.message})
+    return JSONResponse(status_code=exc.status_code, content={'detail': exc.message})

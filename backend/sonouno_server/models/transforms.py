@@ -2,13 +2,13 @@
 """
 from __future__ import annotations
 
-# pylint: disable=too-few-public-methods
-
 from datetime import datetime
 from typing import Any, Literal
 
 from beanie import Document, Indexed, PydanticObjectId
 from pydantic import BaseModel
+
+# pylint: disable=too-few-public-methods
 
 
 class Input(BaseModel):
@@ -32,6 +32,7 @@ class ExposedFunction(BaseModel):
 
 class TransformIn(BaseModel):
     """The transform, as input by the user."""
+
     name: str
     description: str = ''
     public: bool = True
@@ -42,5 +43,5 @@ class TransformIn(BaseModel):
 
 class Transform(TransformIn, Document):
     """The transform, as stored in the database and returned to the user."""
-    user_id: Indexed(PydanticObjectId)
 
+    user_id: Indexed(PydanticObjectId)

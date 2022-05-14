@@ -21,14 +21,14 @@ from .util import auth_headers
 async def clear_database(server: FastAPI) -> None:
     """Empties the test database"""
     for collection in await server.db.list_collections():
-        await server.db[collection["name"]].delete_many({})
+        await server.db[collection['name']].delete_many({})
 
 
 @pytest.fixture
 async def client() -> Iterator[AsyncClient]:
     """Async server client that handles lifespan and teardown"""
     async with LifespanManager(app):
-        async with AsyncClient(app=app, base_url="http://test") as _client:
+        async with AsyncClient(app=app, base_url='http://test') as _client:
             try:
                 yield _client
             except Exception as exc:  # pylint: disable=broad-except
@@ -71,4 +71,3 @@ async def private_transform(user) -> Transform:
     """Adds a test transform to the Transform collection"""
     async with added_transform(user=user, public=False) as transform:
         yield transform
-

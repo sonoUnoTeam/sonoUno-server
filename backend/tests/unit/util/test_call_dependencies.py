@@ -1,7 +1,10 @@
 import networkx as nx
 import pytest
 
-from sonouno_server.util.call_dependencies import CallDependencyResolver, _contract_edges
+from sonouno_server.util.call_dependencies import (
+    CallDependencyResolver,
+    _contract_edges,
+)
 
 
 def get_graph(values):
@@ -21,11 +24,12 @@ def assert_graph_equals(graph1, graph2):
 
 GRAPH = [(0, 1, (2, 3)), (1, 2, (2,)), (1, 3, (1,)), (0, 3, (1, 1)), (0, 3, (3, 1))]
 
+
 @pytest.mark.parametrize(
     'node, expected',
     [
         (1, [(0, 2, (2, 3, 2)), (0, 3, (2, 3, 1)), (0, 3, (1, 1)), (0, 3, (3, 1))]),
-    ]
+    ],
 )
 def test_remove_nodes(node, expected):
     graph = get_graph(GRAPH)

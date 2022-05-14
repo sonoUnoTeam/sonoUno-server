@@ -13,6 +13,7 @@ class FunctionDefVisitor(ast.NodeVisitor):
     Functions defined inside another function are returned, but the namespace
     information is lost.
     """
+
     __visited_nodes: set[ast.FunctionDef]
 
     def visit_Module(self, node: ast.Module):
@@ -31,6 +32,7 @@ class FunctionDefDependencyVisitor(ast.NodeVisitor):
     Functions defined inside another function are returned, but the namespace
     information is lost.
     """
+
     __dependencies: list[str]
 
     def visit_FunctionDef(self, node: ast.FunctionDef):
@@ -88,7 +90,9 @@ class CallDependencyResolver:
     def get_dependencies_from_graph(graph: nx.MultiDiGraph) -> dict[str, list[str]]:
         dependencies = {}
         for node in graph.nodes():
-            edges = sorted(graph.out_edges(node, data=True), key=lambda _: _[2]['ordering'])
+            edges = sorted(
+                graph.out_edges(node, data=True), key=lambda _: _[2]['ordering']
+            )
             out_nodes = [edge[1] for edge in edges]
             dependencies[node] = out_nodes
         return dependencies

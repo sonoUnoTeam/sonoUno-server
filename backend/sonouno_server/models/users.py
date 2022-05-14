@@ -41,7 +41,7 @@ class User(UserOut, Document):
     email_confirmed_at: Optional[datetime] = None
 
     def __repr__(self) -> str:
-        return f"<User {self.email}>"
+        return f'<User {self.email}>'
 
     def __str__(self) -> str:
         return self.email
@@ -60,6 +60,6 @@ class User(UserOut, Document):
         return self.id.generation_time
 
     @classmethod
-    async def by_email(cls, email: str) -> "User":
+    async def by_email(cls, email: str) -> 'User':
         """Get a user by email"""
         return await cls.find_one(cls.email == email)

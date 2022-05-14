@@ -8,7 +8,7 @@ async def test_create(client, user_auth, public_transform):
         'transform_id': str(public_transform.id),
         'inputs': {
             'param1': 'test',
-        }
+        },
     }
     response = await client.post('/jobs', json=job_in, headers=user_auth)
     assert response.status_code == 200

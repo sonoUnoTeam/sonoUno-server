@@ -1,9 +1,9 @@
 from typing import Any
+
 import pytest
 
 from sonouno_server.models import TransformIn
 from sonouno_server.util.transform_builder import TransformBuilder
-
 from tests.data import create_user
 
 
@@ -46,7 +46,7 @@ def pipeline(param1_pipeline: str = 'default1', param2_pipeline: int = 42) -> st
         ('-> list[int]', {0: list[int]}),
         ('-> namedtuple("Out1", "x, y")', {'x': Any, 'y': Any}),
         ('-> NamedTuple("Out2", x=int, y=float)', {'x': int, 'y': float}),
-    ]
+    ],
 )
 def test_transform_builder_outputs(return_type, expected_outputs):
     source = f"""
