@@ -2,7 +2,6 @@
 """
 
 from fastapi import APIRouter, Depends, HTTPException, Response
-from fastapi_jwt_auth import AuthJWT
 
 from ..models.users import User, UserAuth, UserOut, UserUpdate
 from ..util.current_user import current_user

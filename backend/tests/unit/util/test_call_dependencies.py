@@ -16,7 +16,7 @@ def get_graph(values):
 
 def assert_graph_equals(graph1, graph2):
     def get_edges(graph):
-        return set((a, b, c['ordering']) for a, b, c in graph.edges(data=True))
+        return {(a, b, c['ordering']) for a, b, c in graph.edges(data=True)}
 
     assert set(graph1.nodes()) == set(graph2.nodes())
     assert get_edges(graph1) == get_edges(graph2)

@@ -2,8 +2,7 @@
 """
 from __future__ import annotations
 
-from datetime import datetime
-from typing import Any, Literal
+from typing import Literal
 
 from beanie import Document, Indexed, PydanticObjectId
 from pydantic import BaseModel

@@ -4,7 +4,6 @@
 # pylint: disable=too-few-public-methods
 
 from datetime import datetime
-from typing import Optional
 
 from beanie import Document, Indexed
 from pydantic import BaseModel, EmailStr
@@ -20,11 +19,11 @@ class UserAuth(BaseModel):
 class UserUpdate(BaseModel):
     """Updatable user fields"""
 
-    email: Optional[EmailStr] = None
+    email: EmailStr | None = None
 
     # User information
-    first_name: Optional[str] = None
-    last_name: Optional[str] = None
+    first_name: str | None = None
+    last_name: str | None = None
 
 
 class UserOut(UserUpdate):
@@ -38,7 +37,7 @@ class User(UserOut, Document):
     """User DB representation"""
 
     password: str
-    email_confirmed_at: Optional[datetime] = None
+    email_confirmed_at: datetime | None = None
 
     def __repr__(self) -> str:
         return f'<User {self.email}>'

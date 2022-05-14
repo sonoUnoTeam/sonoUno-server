@@ -3,7 +3,7 @@
 
 # pylint: disable=unused-import
 
-from . import jwt
+from . import jwt  # nopycln: import  # noqa: F401
 from .app import app
 from .routes.iam import router as aim_router
 from .routes.jobs import router as job_router

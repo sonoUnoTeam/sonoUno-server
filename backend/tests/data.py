@@ -7,7 +7,6 @@ from uuid import uuid4
 from beanie import PydanticObjectId
 
 from sonouno_server.models import Transform, User
-from sonouno_server.models.users import User
 from sonouno_server.util.password import hash_password
 
 

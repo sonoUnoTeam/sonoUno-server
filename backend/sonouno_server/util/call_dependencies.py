@@ -1,6 +1,5 @@
 import ast
 from itertools import product
-from operator import itemgetter
 from typing import Any, Iterable
 
 import networkx as nx

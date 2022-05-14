@@ -1,5 +1,3 @@
-import pytest
-
 from sonouno_server.models import Job
 
 

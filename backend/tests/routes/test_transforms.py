@@ -1,5 +1,3 @@
-import pytest
-
 from sonouno_server.models import ExposedFunction, Transform
 
 from ..data import added_transform

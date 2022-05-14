@@ -2,7 +2,6 @@
 User information tests
 """
 
-import pytest
 from httpx import AsyncClient
 
 from tests.data import add_empty_user
