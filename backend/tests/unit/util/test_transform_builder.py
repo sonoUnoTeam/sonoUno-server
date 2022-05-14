@@ -32,7 +32,7 @@ def pipeline(param1_pipeline: str = 'default1', param2_pipeline: int = 42) -> st
         entry_point={'name': 'pipeline'},
     )
     transform = TransformBuilder(transform_in, user).create()
-    pytest.xfail('Write me')
+    pytest.xfail(f'Write tests for transform {transform.id}')
 
 
 @pytest.mark.parametrize(

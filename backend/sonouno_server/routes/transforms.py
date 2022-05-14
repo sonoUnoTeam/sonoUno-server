@@ -24,7 +24,7 @@ async def create(transform_in: TransformIn, user: User = Depends(current_user)):
 @router.get('', response_model=list[Transform])
 async def list_(user: User = Depends(current_user)):
     """Lists the transforms either public or belonging to a user."""
-    criteria = Or(Transform.user_id == user.id, Transform.public == True)
+    criteria = Or(Transform.user_id == user.id, Transform.public == True)  # noqa: E712
     transforms = await Transform.find(criteria).to_list()
     return transforms
 
@@ -41,8 +41,8 @@ async def get(id: PydanticObjectId, user: User = Depends(current_user)):
 
 
 @router.delete('/{id}')
-async def get(id: PydanticObjectId, user: User = Depends(current_user)):
-    """Gets a transform."""
+async def delete(id: PydanticObjectId, user: User = Depends(current_user)):
+    """Deletes a transform."""
     transform = await Transform.get(document_id=id)
     if transform:
         if transform.user_id != user.id:

@@ -45,6 +45,7 @@ async def send_password_reset_email(email: str, token: str):
         message = MessageSchema(
             recipients=[email],
             subject='sonoUno Password Reset',
-            body=f'Click the link to reset your sonoUno account password: {url}\nIf you did not request this, please ignore this email',
+            body=f'Click the link to reset your sonoUno account password: {url}\n'
+            'If you did not request this, please ignore this email',
         )
         await mail.send_message(message)

@@ -28,7 +28,7 @@ async def test_user_update(client: AsyncClient) -> None:
     assert resp.status_code == 200
     data = resp.json()
     assert data['email'] == email
-    assert data[key] == None
+    assert data[key] is None
     # Update user
     name = 'Tester'
     resp = await client.patch('/users/me', headers=auth, json={key: name})

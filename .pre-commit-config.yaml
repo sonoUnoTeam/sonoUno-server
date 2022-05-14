@@ -39,3 +39,30 @@ repos:
     args:
     - --skip-string-normalization
     files: ^backend/
+
+- repo: https://github.com/pycqa/flake8
+  rev: '4.0.1'
+  hooks:
+  - id: flake8
+    name: flake 8 (src)
+    args:
+    - --max-line-length=88
+    # D106 Missing docstring in public nested class
+    # D401 First line should be in imperative mood
+    - --extend-ignore=D106,D401
+    - --extend-ignore=D
+    - --extend-immutable-calls=Body,Depends,Field,Path,Query
+    additional_dependencies:
+    - flake8-bugbear
+    - flake8-docstrings
+    files: ^backend/sonouno_server/
+
+- repo: https://github.com/pycqa/flake8
+  rev: '4.0.1'
+  hooks:
+  - id: flake8
+    name: flake 8 (tests)
+    args:
+    # E501 Line too long
+    - --extend-ignore=D, E501
+    files: ^backend/tests/

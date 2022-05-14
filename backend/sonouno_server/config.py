@@ -12,7 +12,7 @@ class Settings(BaseModel):
 
     # Mongo Engine settings
     mongo_database = config('MONGO_INITDB_DATABASE')
-    mongo_uri = f'mongodb://{config("MONGO_INITDB_USERNAME")}:{config("MONGO_INITDB_PASSWORD")}@mongodb:27017/{config("MONGO_INITDB_DATABASE")}'
+    mongo_uri = f'mongodb://{config("MONGO_INITDB_USERNAME")}:{config("MONGO_INITDB_PASSWORD")}@mongodb:27017/{config("MONGO_INITDB_DATABASE")}'  # noqa
 
     # Security settings
     authjwt_secret_key = config('SECRET_KEY')
