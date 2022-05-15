@@ -1,4 +1,5 @@
 import inspect
+import logging
 from types import FunctionType
 from typing import Any, get_args, get_origin
 
@@ -8,6 +9,8 @@ from apischema.json_schema import serialization_schema
 from ..models import ExposedFunction, Input, Output, Transform, TransformIn, User
 from ..types import AnyType
 from ..util.call_dependencies import CallDependencyResolver
+
+logger = logging.getLogger(__name__)
 
 
 def exposed(f: FunctionType) -> FunctionType:
@@ -29,16 +32,16 @@ class TransformBuilder:
     def create(self) -> Transform:
         all_funcs = self.extract_all_functions()
         exposed_funcs = {f.__name__: f for f in all_funcs if is_exposed(f)}
-        non_exposed_funcs = [f.__name__ for f in all_funcs if not is_exposed(f)]
 
         resolver = CallDependencyResolver(self.transform_in.source)
-        graph = resolver.get_graph()
-        resolver.remove_nodes(graph, non_exposed_funcs)
+        function_defs = resolver.get_function_defs()
+        graph = resolver.get_graph(function_defs)
+        non_exposed_nodes = graph.nodes() - exposed_funcs.keys()
+        resolver.remove_nodes(graph, non_exposed_nodes)
         dependencies = resolver.get_dependencies_from_graph(graph)
 
-        def_in_source_funcs = list(graph.nodes())
-        if len(def_in_source_funcs) == 1:
-            entry_point_name = def_in_source_funcs[0]
+        if len(function_defs) == 1:
+            entry_point_name = function_defs[0].name
         else:
             entry_point_name = self.transform_in.entry_point.name
         entry_point_func = exposed_funcs[entry_point_name]
@@ -61,7 +64,7 @@ class TransformBuilder:
         locals_: dict[str, Any] = {}
         # XXX it should be executed in a container
         try:
-            exec(self.transform_in.source, {}, locals_)
+            exec(self.transform_in.source, locals_, locals_)
         except SyntaxError:
             import sys
 
@@ -109,14 +112,23 @@ class TransformBuilder:
         else:
             schema_for_default = schema(default=param.default)
         if param.annotation is inspect._empty:
-            annotation = Any
+            tp = Any
         else:
-            annotation = param.annotation
+            tp = param.annotation
+
+        try:
+            json_schema = serialization_schema(tp, schema=schema_for_default)
+        except Exception as exc:
+            logger.error(
+                f'Could not get serialization schema for input {name} ({tp}): '
+                f'{type(exc).__name__}: {exc}'
+            )
+            json_schema = serialization_schema(Any, schema=schema_for_default)
 
         input_ = Input(
             name=name,
             fq_name=name,
-            json_schema=serialization_schema(annotation, schema=schema_for_default),
+            json_schema=json_schema,
         )
         return input_
 
@@ -149,9 +161,17 @@ class TransformBuilder:
 
     @staticmethod
     def extract_output(name: str, tp: AnyType) -> Output:
+        try:
+            json_schema = serialization_schema(tp)
+        except Exception as exc:
+            logger.error(
+                f'Could not get serialization schema for output {name} ({tp}): '
+                f'{type(exc).__name__}: {exc}'
+            )
+            json_schema = serialization_schema(Any)
         output = Output(
             name=name,
-            json_schema=serialization_schema(tp),
+            json_schema=json_schema,
         )
         return output
 

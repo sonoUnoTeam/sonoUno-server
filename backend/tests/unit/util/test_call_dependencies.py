@@ -79,6 +79,7 @@ def d():
         ('c', 'd', (0,)),
     ]
     resolver = CallDependencyResolver(source)
-    actual_graph = resolver.get_graph()
+    function_defs = resolver.get_function_defs()
+    actual_graph = resolver.get_graph(function_defs)
     expected_graph = get_graph(expected)
     assert_graph_equals(actual_graph, expected_graph)

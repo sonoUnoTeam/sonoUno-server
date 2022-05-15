@@ -85,13 +85,15 @@ MinIO servers.
 ```python
 import requests
 
-SERVER_URL='http://37.187.38.200'
+SERVER_URL = DATA_URL = 'http://37.187.38.200'
 EMAIL = "test_email@test.com"
 PASSWORD = 'password'
 SOURCE = """
-from typing import NamedTuple
 import pickle
+from typing import Any, NamedTuple
+
 import requests
+
 from streamunolib import exposed
 
 def loader(url: str):
@@ -100,12 +102,12 @@ def loader(url: str):
     return pickle.loads(response.content)
 
 @exposed
-def inner_stage(x, increment):
+def inner_stage(x: list[int], increment: int) -> list[int]:
     return [_ + increment for _ in x]
 
 class PipelineOutput(NamedTuple):
-    processed_data: list
-    metadata: dict
+    processed_data: list[int]
+    metadata: dict[str, Any]
 
 @exposed
 def pipeline(url: str, increment: int = 3) -> PipelineOutput:
@@ -120,7 +122,7 @@ user = {
     'password': PASSWORD,
 }
 response = requests.post(f'{SERVER_URL}/users', json=user)
-if response.status == 409:
+if response.status_code == 409:
     print(f'Email {EMAIL} is already registered.')
 else:
     response.raise_for_status()
@@ -133,27 +135,28 @@ session = requests.Session()
 session.headers['Authorization'] = f'Bearer {access_token}'
 
 # Create transform
-transform = {
+transform_in = {
     'name': "Test transformation",
     'public': True,
     'language': "python",
     'source': SOURCE,
     'entry_point': {"name": "pipeline"}
 }
-response = session.post(f'{SERVER_URL}/transforms', json=transform)
+response = session.post(f'{SERVER_URL}/transforms', json=transform_in)
 response.raise_for_status()
-transform_id = response.json()['_id']
+transform = response.json()
 
 # Create job
-job = {
-    'transform_id': transform_id,
+job_in = {
+    'transform_id': transform['_id'],
     'inputs': {
-        'url': f'{SERVER_URL}:9000/test-bucket-staging/list.pickle',
+        'url': f'{DATA_URL}:9000/test-bucket-staging/list.pickle',
     },
 }
-response = session.post(f'{SERVER_URL}/jobs', json=job)
+response = session.post(f'{SERVER_URL}/jobs', json=job_in)
 response.raise_for_status()
-print(response.json()['results'])
+job = response.json()
+print(job['results'])
 ```
 
 [MongoDB]: https://www.mongodb.com "MongoDB NoSQL homepage"

@@ -57,10 +57,12 @@ class CallDependencyResolver:
     def __init__(self, source: str):
         self.source = source
 
-    def get_graph(self) -> nx.MultiDiGraph:
-        graph = nx.MultiDiGraph()
+    def get_function_defs(self) -> list[ast.FunctionDef]:
         tree = ast.parse(self.source)
-        functions = FunctionDefVisitor().visit(tree)
+        return FunctionDefVisitor().visit(tree)
+
+    def get_graph(self, functions: list[ast.FunctionDef]) -> nx.MultiDiGraph:
+        graph = nx.MultiDiGraph()
         for function in functions:
             dependencies = FunctionDefDependencyVisitor().visit(function)
             graph.add_edges_from(
