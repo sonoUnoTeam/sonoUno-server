@@ -25,6 +25,7 @@ tests:
   interruptible: true
   script:
     - compose/run-tests-backend.sh
+  coverage: '/^TOTAL.+?(\d+\%)$/'
 
 build-and-publish:
   stage: build
