@@ -22,11 +22,13 @@ before_script:
 
 tests:
   stage: test
+  interruptible: true
   script:
     - compose/run-tests-backend.sh
 
 build-and-publish:
   stage: build
+  interruptible: true
   before_script:
     - apk add --no-cache py3-pip py3-wheel py3-cryptography git
     - ln -s python3 /usr/bin/python
@@ -48,6 +50,7 @@ build-and-publish:
 
 deploy-staging:
   stage: deploy
+  interruptible: true
   environment:
     name: staging
     url: http://37.187.38.200
