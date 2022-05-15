@@ -30,8 +30,9 @@ app = FastAPI(openapi_tags=tags_metadata)
 
 
 @app.on_event('startup')
-async def app_init():
+async def app_init() -> None:
     """Initialize application services"""
     client = AsyncIOMotorClient(CONFIG.mongo_uri)
-    app.db = getattr(client, CONFIG.mongo_database)
-    await init_beanie(app.db, document_models=[Job, Transform, User])
+    app.state.db = getattr(client, CONFIG.mongo_database)
+    models = [Job, Transform, User]
+    await init_beanie(app.state.db, document_models=models)  # type: ignore[arg-type]

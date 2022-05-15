@@ -11,16 +11,14 @@ from ..util.call_dependencies import CallDependencyResolver
 
 
 def exposed(f: FunctionType) -> FunctionType:
-    f.__exposed__ = True
+    f.__exposed__ = True  # type: ignore[attr-defined]
     return f
 
 
 def is_exposed(func: Any) -> bool:
-    return (
-        isinstance(func, FunctionType)
-        and hasattr(func, '__exposed__')
-        and func.__exposed__
-    )
+    if not isinstance(func, FunctionType):
+        return False
+    return getattr(func, '__exposed__', False)
 
 
 class TransformBuilder:
@@ -60,7 +58,7 @@ class TransformBuilder:
         return transform
 
     def extract_all_functions(self) -> list[FunctionType]:
-        locals_ = {}
+        locals_: dict[str, Any] = {}
         # XXX it should be executed in a container
         try:
             exec(self.transform_in.source, {}, locals_)
@@ -133,9 +131,11 @@ class TransformBuilder:
             return {0: Any}
 
         # named tuple case
-        if isinstance(tp, type) and issubclass(tp, tuple) and hasattr(tp, '_fields'):
-            annotations = getattr(tp, '__annotations__', {})
-            return {_: annotations.get(_, Any) for _ in tp._fields}
+        if isinstance(tp, type) and issubclass(tp, tuple):
+            fields = getattr(tp, '_fields', None)
+            if fields:
+                annotations = getattr(tp, '__annotations__', {})
+                return {_: annotations.get(_, Any) for _ in fields}
 
         origin = get_origin(tp)
         if origin is None:

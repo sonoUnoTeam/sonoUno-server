@@ -39,13 +39,15 @@ async def forgot_password(
 ):
     """Sends password reset email"""
     user = await User.by_email(email)
-    if user.email_confirmed_at is not None:
+    if user is None:
+        return None
+    if user.email_confirmed_at:
         raise HTTPException(400, 'Email is already verified')
     if user.disabled:
         raise HTTPException(400, 'Your account is disabled')
     token = auth.create_access_token(user.email)
     await send_password_reset_email(email, token)
-    return Response(status_code=200)
+    return None
 
 
 @router.post('/reset-password/{token}', response_model=UserOut)
@@ -54,12 +56,14 @@ async def reset_password(
 ):
     """Reset user password from token value"""
     # Manually assign the token value
-    auth._token = token  # pylint: disable=protected-access
+    auth._token = token
     user = await User.by_email(auth.get_jwt_subject())
+    if user is None:
+        raise HTTPException(400, 'User has been deleted from the database.')
     if user.email_confirmed_at is not None:
-        raise HTTPException(400, 'Email is already verified')
+        raise HTTPException(400, 'Email is already verified.')
     if user.disabled:
-        raise HTTPException(400, 'Your account is disabled')
+        raise HTTPException(400, 'Your account is disabled.')
     user.password = hash_password(password)
     await user.save()
     return user
@@ -71,10 +75,12 @@ async def request_verification_email(
 ):
     """Send the user a verification email"""
     user = await User.by_email(email)
+    if user is None:
+        raise HTTPException(400, 'User has been deleted from the database.')
     if user.email_confirmed_at is not None:
-        raise HTTPException(400, 'Email is already verified')
+        raise HTTPException(400, 'Email is already verified.')
     if user.disabled:
-        raise HTTPException(400, 'Your account is disabled')
+        raise HTTPException(400, 'Your account is disabled.')
     token = auth.create_access_token(user.email)
     await send_verification_email(email, token)
     return Response(status_code=200)
@@ -86,6 +92,8 @@ async def verify_email(token: str, auth: AuthJWT = Depends()):
     # Manually assign the token value
     auth._token = token  # pylint: disable=protected-access
     user = await User.by_email(auth.get_jwt_subject())
+    if user is None:
+        raise HTTPException(400, 'User has been deleted from the database.')
     if user.email_confirmed_at is not None:
         raise HTTPException(400, 'Email is already verified')
     if user.disabled:

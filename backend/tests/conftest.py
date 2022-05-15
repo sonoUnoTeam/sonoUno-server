@@ -2,9 +2,7 @@
 Pytest fixtures
 """
 
-# pylint: disable=wrong-import-position
-
-from typing import Iterator
+from collections.abc import AsyncIterator
 
 import pytest
 from asgi_lifespan import LifespanManager
@@ -18,14 +16,14 @@ from tests.data import added_transform, added_user
 from .util import auth_headers
 
 
-async def clear_database(server: FastAPI) -> None:
+async def clear_database(app: FastAPI) -> None:
     """Empties the test database"""
-    for collection in await server.db.list_collections():
-        await server.db[collection['name']].delete_many({})
+    for collection in await app.state.db.list_collections():
+        await app.state.db[collection['name']].delete_many({})
 
 
 @pytest.fixture
-async def client() -> Iterator[AsyncClient]:
+async def client() -> AsyncIterator[AsyncClient]:
     """Async server client that handles lifespan and teardown"""
     async with LifespanManager(app):
         async with AsyncClient(app=app, base_url='http://test') as _client:
@@ -38,7 +36,7 @@ async def client() -> Iterator[AsyncClient]:
 
 
 @pytest.fixture
-async def user(client) -> User:
+async def user(client) -> AsyncIterator[User]:
     async with added_user() as user:
         yield user
 
@@ -49,7 +47,7 @@ async def user_auth(client, user: User) -> dict[str, str]:
 
 
 @pytest.fixture
-async def user2(client) -> User:
+async def user2(client) -> AsyncIterator[User]:
     async with added_user() as user:
         yield user
 
@@ -60,14 +58,14 @@ async def user2_auth(client, user2: User) -> dict[str, str]:
 
 
 @pytest.fixture
-async def public_transform(user) -> Transform:
+async def public_transform(user) -> AsyncIterator[Transform]:
     """Adds a test transform to the Transform collection"""
     async with added_transform(user=user, public=True) as transform:
         yield transform
 
 
 @pytest.fixture
-async def private_transform(user) -> Transform:
+async def private_transform(user) -> AsyncIterator[Transform]:
     """Adds a test transform to the Transform collection"""
     async with added_transform(user=user, public=False) as transform:
         yield transform

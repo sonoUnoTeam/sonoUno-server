@@ -45,7 +45,7 @@ class FunctionDefDependencyVisitor(ast.NodeVisitor):
         self.generic_visit(node)
         return self.__dependencies
 
-    def visit_Call(self, node: ast.FunctionDef) -> Any:
+    def visit_Call(self, node: ast.Call) -> Any:
         ast.dump(node, indent=4)
         if not isinstance(node.func, ast.Name):
             return
@@ -57,7 +57,7 @@ class CallDependencyResolver:
     def __init__(self, source: str):
         self.source = source
 
-    def get_graph(self) -> nx.DiGraph:
+    def get_graph(self) -> nx.MultiDiGraph:
         graph = nx.MultiDiGraph()
         tree = ast.parse(self.source)
         functions = FunctionDefVisitor().visit(tree)

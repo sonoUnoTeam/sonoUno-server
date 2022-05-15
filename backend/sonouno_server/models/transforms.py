@@ -2,7 +2,7 @@
 """
 from __future__ import annotations
 
-from typing import Literal
+from typing import Any, Literal
 
 from beanie import Document, Indexed, PydanticObjectId
 from pydantic import BaseModel
@@ -13,12 +13,12 @@ from pydantic import BaseModel
 class Input(BaseModel):
     name: str
     fq_name: str
-    json_schema: dict
+    json_schema: dict[str, Any]
 
 
 class Output(BaseModel):
     name: str
-    json_schema: dict
+    json_schema: dict[str, Any]
 
 
 class ExposedFunction(BaseModel):
@@ -43,4 +43,4 @@ class TransformIn(BaseModel):
 class Transform(TransformIn, Document):
     """The transform, as stored in the database and returned to the user."""
 
-    user_id: Indexed(PydanticObjectId)
+    user_id: Indexed(PydanticObjectId)  # type: ignore[valid-type]

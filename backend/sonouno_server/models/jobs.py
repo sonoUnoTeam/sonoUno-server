@@ -7,7 +7,7 @@ from pydantic import BaseModel
 
 class JobIn(BaseModel):
     transform_id: PydanticObjectId
-    inputs: dict
+    inputs: dict[str, Any]
 
 
 class Job(JobIn, Document):
@@ -18,4 +18,6 @@ class Job(JobIn, Document):
     @property
     def created_at(self) -> datetime:
         """Datetime job was created from ID"""
+        if self.id is None:
+            raise RuntimeError('Job has not been inserted in the database yet.')
         return self.id.generation_time

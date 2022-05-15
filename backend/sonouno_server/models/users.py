@@ -2,6 +2,7 @@
 """
 
 # pylint: disable=too-few-public-methods
+from __future__ import annotations
 
 from datetime import datetime
 
@@ -29,7 +30,7 @@ class UserUpdate(BaseModel):
 class UserOut(UserUpdate):
     """User fields returned to the client"""
 
-    email: Indexed(EmailStr, unique=True)
+    email: Indexed(EmailStr, unique=True)  # type: ignore[valid-type]
     disabled: bool = False
 
 
@@ -56,9 +57,11 @@ class User(UserOut, Document):
     @property
     def created_at(self) -> datetime:
         """Datetime user was created from ID"""
+        if self.id is None:
+            raise RuntimeError('User has not been inserted in the database yet.')
         return self.id.generation_time
 
     @classmethod
-    async def by_email(cls, email: str) -> 'User':
+    async def by_email(cls, email: str) -> User | None:
         """Get a user by email"""
         return await cls.find_one(cls.email == email)

@@ -1,5 +1,6 @@
 """Test data handlers
 """
+from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 from uuid import uuid4
@@ -29,7 +30,7 @@ async def add_empty_user() -> None:
 
 
 @asynccontextmanager
-async def added_user() -> User:
+async def added_user() -> AsyncIterator[User]:
     """Adds a test user to User collection"""
     user = create_user()
     try:
@@ -68,7 +69,7 @@ def pipeline(param1: str, param2: int = 3):
 @asynccontextmanager
 async def added_transform(
     user: User, public: bool = True, source: str = ''
-) -> Transform:
+) -> AsyncIterator[Transform]:
     """Adds a test transform to the Transform collection"""
     transform = create_transform(user, public, source)
     try:

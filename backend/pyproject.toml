@@ -35,6 +35,19 @@ style = "pep440"
 requires = ["poetry>=1.1.0", "poetry-dynamic-versioning"]
 build-backend = "poetry.masonry.api"
 
+[tool.isort]
+known_first_party = ["sonouno_server", "streamunolib"]
+
+[[tool.mypy.overrides]]
+module = [
+    "decouple",
+    "fastapi_jwt_auth.*",
+    "fastapi_mail",
+    "motor.*",
+    "networkx",
+]
+ignore_missing_imports = true
+
 [tool.pytest.ini_options]
 minversion = "6.0"
 addopts = "-ra -q"
@@ -42,6 +55,3 @@ testpaths = [
     "tests",
 ]
 asyncio_mode = "auto"
-
-[tool.isort]
-known_first_party = ["sonouno_server", "streamunolib"]
