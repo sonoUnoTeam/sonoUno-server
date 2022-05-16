@@ -1,9 +1,10 @@
-from typing import Any
+from typing import Annotated, Any
 
 import pytest
 
 from sonouno_server.models import TransformIn
 from sonouno_server.util.transform_builder import TransformBuilder
+from streamunolib.content_types import ContentType
 from tests.data import create_user
 
 
@@ -71,3 +72,24 @@ def pipeline(){return_type}:
     tp_return = func.__annotations__.get('return')
     actual_outputs = builder.extract_output_types(tp_return)
     assert actual_outputs == expected_outputs
+
+
+@pytest.mark.parametrize(
+    'tp, expected_tp, expected_content_type',
+    [
+        (int, int, None),
+        (Annotated[int, 4], Annotated[int, 4], None),
+        (Annotated[int, ContentType('xyz')], int, ContentType('xyz')),
+        (Annotated[int, 2, ContentType('xyz')], Annotated[int, 2], ContentType('xyz')),
+        (
+            Annotated[int, 2, ContentType('xyz'), 3],
+            Annotated[int, 2, 3],
+            ContentType('xyz'),
+        ),
+        (Annotated[int, ContentType('xyz'), 3], Annotated[int, 3], ContentType('xyz')),
+    ],
+)
+def test_transform_builder_content_type(tp, expected_tp, expected_content_type):
+    actual_tp, actual_content_type = TransformBuilder.extract_output_content_type(tp)
+    assert actual_tp == expected_tp
+    assert actual_content_type == expected_content_type

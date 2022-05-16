@@ -1,10 +1,12 @@
 import inspect
 import logging
 from types import FunctionType
-from typing import Any, get_args, get_origin
+from typing import Annotated, Any, get_args, get_origin
 
 from apischema import schema
 from apischema.json_schema import serialization_schema
+
+from streamunolib.content_types import ContentType
 
 from ..models import ExposedFunction, Input, Output, Transform, TransformIn, User
 from ..types import AnyType
@@ -159,8 +161,8 @@ class TransformBuilder:
 
         return {0: tp}
 
-    @staticmethod
-    def extract_output(name: str, tp: AnyType) -> Output:
+    def extract_output(self, name: str, tp: AnyType) -> Output:
+        tp, content_type = self.extract_output_content_type(tp)
         try:
             json_schema = serialization_schema(tp)
         except Exception as exc:
@@ -171,9 +173,31 @@ class TransformBuilder:
             json_schema = serialization_schema(Any)
         output = Output(
             name=name,
+            content_type=content_type.mimetype if content_type else None,
             json_schema=json_schema,
         )
         return output
+
+    @staticmethod
+    def extract_output_content_type(tp: AnyType) -> tuple[AnyType, ContentType | None]:
+        origin = get_origin(tp)
+        if origin is not Annotated:
+            return tp, None
+        args = get_args(tp)
+        new_origin = args[0]
+        new_args = [new_origin]
+        content_type: ContentType | None = None
+        for arg in args[1:]:
+            if isinstance(arg, ContentType):
+                content_type = arg
+            else:
+                new_args.append(arg)
+        if content_type:
+            if len(new_args) > 1:
+                tp = Annotated[tuple(new_args)]
+            else:
+                tp = new_origin
+        return tp, content_type
 
     def extract_exposed_function_dependencies(
         self,

@@ -83,6 +83,7 @@ repos:
     - fastapi_jwt_auth
     - networkx
     - pytest-stub
+    - streamunolib
     args:
 #    - --strict
     - --config-file=backend/pyproject.toml

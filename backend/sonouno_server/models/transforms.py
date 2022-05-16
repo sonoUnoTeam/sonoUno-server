@@ -18,6 +18,7 @@ class Input(BaseModel):
 
 class Output(BaseModel):
     name: str
+    content_type: str | None
     json_schema: dict[str, Any]
 
 
