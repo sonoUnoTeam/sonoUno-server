@@ -44,6 +44,11 @@ class Settings(BaseModel):
     mail_password = config_str('MAIL_PASSWORD')
     mail_sender = config_str('MAIL_SENDER', default='noreply@myserver.io')
 
+    # Minio
+    minio_endpoint = config_str('MINIO_ENDPOINT')
+    minio_access_key = config_str('MINIO_ACCESS_KEY')
+    minio_secret_key = config_str('MINIO_SECRET_KEY')
+
     testing = config_bool('TESTING', default=False)
 
 

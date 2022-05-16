@@ -11,7 +11,6 @@ if [ -x "$(command -v poetry)" ]; then
 fi
 ARGS="-f ${SONOUNO_PATH}/docker-compose.yml -f ${SONOUNO_PATH}/docker-compose-dev.yml"
 
-DOMAIN=backend \
 docker-compose $ARGS --env-file ${SONOUNO_PATH}/.env config > ${SONOUNO_PATH}/docker-stack.yml
 
 docker-compose -f ${SONOUNO_PATH}/docker-stack.yml build

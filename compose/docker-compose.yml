@@ -41,17 +41,20 @@ services:
     tty: true         # docker run -t
     environment:
       - SERVER_NAME=${DOMAIN?Variable not set}
-      - SERVER_HOST=https://${DOMAIN?Variable not set}
+      - SERVER_HOST=http://${DOMAIN?Variable not set}
       - SENTRY_DSN=https://nowhere.com
-      - PROJECT_NAME=sonoUno Server
-      - MONGO_INITDB_USERNAME
-      - MONGO_INITDB_PASSWORD
-      - MONGO_INITDB_DATABASE
-      - SALT
-      - SECRET_KEY
       - MAIL_CONSOLE
       - MAIL_USERNAME
       - MAIL_PASSWORD
+      - MINIO_ENDPOINT
+      - MINIO_ACCESS_KEY=${MINIO_ROOT_USER}
+      - MINIO_SECRET_KEY=${MINIO_ROOT_PASSWORD}
+      - MONGO_INITDB_USERNAME
+      - MONGO_INITDB_PASSWORD
+      - MONGO_INITDB_DATABASE
+      - PROJECT_NAME=sonoUno Server
+      - SALT
+      - SECRET_KEY
     expose:
       - 8001
     networks:
@@ -59,6 +62,10 @@ services:
     build:
       context: ../backend
       dockerfile: Dockerfile
+    depends_on:
+      - mongodb
+      - minio1
+      - minio2
     command: bash -c "/code/scripts/prepare-app.sh && uvicorn sonouno_server.main:app --root-path=${ROOTPATH:-/} --port 8001 --host 0.0.0.0 --reload"
 
   mongodb:
