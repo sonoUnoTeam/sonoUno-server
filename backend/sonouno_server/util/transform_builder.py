@@ -53,7 +53,7 @@ class TransformBuilder:
             public=self.transform_in.public,
             language=self.transform_in.language,
             source=self.transform_in.source,
-            entry_point=self.extract_exposed_function_model(
+            entry_point=self.extract_exposed_function(
                 entry_point_func,
                 exposed_funcs,
                 dependencies,
@@ -79,7 +79,7 @@ class TransformBuilder:
         ]
         return output
 
-    def extract_exposed_function_model(
+    def extract_exposed_function(
         self,
         func: FunctionType,
         exposed_funcs: dict[str, FunctionType],
@@ -91,9 +91,7 @@ class TransformBuilder:
             description=self.extract_doctring_from_func(func),
             inputs=self.extract_inputs_from_func(func),
             outputs=self.extract_outputs_from_func(func),
-            exposed_functions=self.extract_exposed_function_dependencies(
-                func, exposed_funcs, dependencies
-            ),
+            callees=self.extract_callees(func, exposed_funcs, dependencies),
         )
 
     def extract_fq_name(self, func: FunctionType) -> str:
@@ -199,14 +197,14 @@ class TransformBuilder:
                 tp = new_origin
         return tp, content_type
 
-    def extract_exposed_function_dependencies(
+    def extract_callees(
         self,
         func: FunctionType,
         exposed_funcs: dict[str, FunctionType],
         dependencies: dict[str, list[str]],
     ) -> list[ExposedFunction]:
         return [
-            self.extract_exposed_function_model(
+            self.extract_exposed_function(
                 exposed_funcs[f],
                 exposed_funcs,
                 dependencies,

@@ -27,7 +27,7 @@ class ExposedFunction(BaseModel):
     description: str = ''
     inputs: list[Input] | None = None
     outputs: list[Output] | None = None
-    exposed_functions: list[ExposedFunction] | None = None
+    callees: list[ExposedFunction] | None = None
 
 
 class TransformIn(BaseModel):
