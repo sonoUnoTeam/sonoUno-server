@@ -8,7 +8,9 @@ from uuid import uuid4
 from beanie import PydanticObjectId
 
 from sonouno_server.models import Transform, User
+from sonouno_server.models.transforms import TransformIn
 from sonouno_server.util.password import hash_password
+from sonouno_server.util.transform_builder import TransformBuilder
 
 
 def create_user(email: str = '') -> User:
@@ -54,16 +56,15 @@ def pipeline(param1: str, param2: int = 3):
     start = inner_stage(param2)
     return param1, [start, start + 10]
     """
-    transform = Transform(
+    transform_in = TransformIn(
         name=str(uuid4()),
         description=str(uuid4()),
-        user_id=user.id,
         public=public,
         language='python',
         source=source,
         entry_point={'name': 'pipeline'},
     )
-    return transform
+    return TransformBuilder(transform_in, user).create()
 
 
 @asynccontextmanager

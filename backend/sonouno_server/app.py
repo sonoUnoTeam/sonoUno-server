@@ -11,6 +11,7 @@ from motor.motor_asyncio import AsyncIOMotorClient
 
 from .config import CONFIG
 from .models import Job, Transform, User
+from .util.minio import make_public_bucket
 
 tags_metadata = [
     {
@@ -45,5 +46,7 @@ async def app_init() -> None:
         CONFIG.minio_secret_key,
         secure=False,
     )
+    make_public_bucket(minio_client, 'jobs')
+
     print('Local Minio buckets:', minio_client.list_buckets())
     app.state.minio = minio_client

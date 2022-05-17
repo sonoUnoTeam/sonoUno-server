@@ -82,7 +82,9 @@ repos:
     - fastapi_mail
     - fastapi_jwt_auth
     - networkx
+    - numpy
     - pytest-stub
+    - scipy
     - streamunolib
     args:
 #    - --strict

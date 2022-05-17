@@ -1,19 +1,23 @@
 from datetime import datetime
-from typing import Any
+from typing import Sequence
 
 from beanie import Document, PydanticObjectId
 from pydantic import BaseModel
 
+from .variables import Input, InputIn, OutputIn, OutputWithValue
+
 
 class JobIn(BaseModel):
     transform_id: PydanticObjectId
-    inputs: dict[str, Any]
+    inputs: Sequence[InputIn] = []
+    outputs: Sequence[OutputIn] = []
 
 
 class Job(JobIn, Document):
     user_id: PydanticObjectId
     done_at: datetime | None = None
-    results: Any | None = None
+    inputs: Sequence[Input] = []
+    outputs: Sequence[OutputWithValue] = []
 
     @property
     def created_at(self) -> datetime:

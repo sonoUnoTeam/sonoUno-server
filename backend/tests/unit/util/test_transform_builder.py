@@ -4,7 +4,7 @@ import pytest
 
 from sonouno_server.models import TransformIn
 from sonouno_server.util.transform_builder import TransformBuilder
-from streamunolib.content_types import ContentType
+from streamunolib import content_type
 from tests.data import create_user
 
 
@@ -75,21 +75,35 @@ def pipeline(){return_type}:
 
 
 @pytest.mark.parametrize(
-    'tp, expected_tp, expected_content_type',
+    'tp, expected_tp, expected_annotations',
     [
-        (int, int, None),
-        (Annotated[int, 4], Annotated[int, 4], None),
-        (Annotated[int, ContentType('xyz')], int, ContentType('xyz')),
-        (Annotated[int, 2, ContentType('xyz')], Annotated[int, 2], ContentType('xyz')),
+        (int, int, {}),
+        (Annotated[int, 4], Annotated[int, 4], {}),
+        (Annotated[int, content_type('jpg')], int, {'content_type': 'image/jpeg'}),
         (
-            Annotated[int, 2, ContentType('xyz'), 3],
-            Annotated[int, 2, 3],
-            ContentType('xyz'),
+            Annotated[int, 2, content_type('jpg')],
+            Annotated[int, 2],
+            {'content_type': 'image/jpeg'},
         ),
-        (Annotated[int, ContentType('xyz'), 3], Annotated[int, 3], ContentType('xyz')),
+        (
+            Annotated[int, 2, content_type('jpg'), 3],
+            Annotated[int, 2, 3],
+            {'content_type': 'image/jpeg'},
+        ),
+        (
+            Annotated[int, content_type('jpg'), 3],
+            Annotated[int, 3],
+            {'content_type': 'image/jpeg'},
+        ),
+        (Annotated[int, {}], int, {}),
+        (
+            Annotated[int, content_type('jpg') | {'encoding': {}}],
+            int,
+            {'content_type': 'image/jpeg', 'encoding': {}},
+        ),
     ],
 )
-def test_transform_builder_content_type(tp, expected_tp, expected_content_type):
-    actual_tp, actual_content_type = TransformBuilder.extract_output_content_type(tp)
+def test_transform_builder_annotations(tp, expected_tp, expected_annotations):
+    actual_tp, actual_annotations = TransformBuilder.extract_output_annotations(tp)
     assert actual_tp == expected_tp
-    assert actual_content_type == expected_content_type
+    assert actual_annotations == expected_annotations

@@ -1,12 +1,11 @@
 import inspect
+import json
 import logging
+from http.client import HTTPException
 from types import FunctionType
-from typing import Annotated, Any, get_args, get_origin
+from typing import Annotated, Any, Mapping, get_args, get_origin
 
-from apischema import schema
 from apischema.json_schema import serialization_schema
-
-from streamunolib.content_types import ContentType
 
 from ..models import ExposedFunction, Input, Output, Transform, TransformIn, User
 from ..types import AnyType
@@ -46,6 +45,11 @@ class TransformBuilder:
             entry_point_name = function_defs[0].name
         else:
             entry_point_name = self.transform_in.entry_point.name
+            if not entry_point_name:
+                raise HTTPException(
+                    400, 'The name of the entry point of the pipeline is not specified.'
+                )
+
         entry_point_func = exposed_funcs[entry_point_name]
         transform = Transform(
             name=self.transform_in.name,
@@ -55,6 +59,8 @@ class TransformBuilder:
             source=self.transform_in.source,
             entry_point=self.extract_exposed_function(
                 entry_point_func,
+                '',
+                True,
                 exposed_funcs,
                 dependencies,
             ),
@@ -82,60 +88,92 @@ class TransformBuilder:
     def extract_exposed_function(
         self,
         func: FunctionType,
+        caller_id: str,
+        is_entry_point: bool,
         exposed_funcs: dict[str, FunctionType],
         dependencies: dict[str, list[str]],
     ) -> ExposedFunction:
+        func_id = self.extract_id_from_func(func, caller_id)
         return ExposedFunction(
+            id=func_id,
             name=func.__name__,
-            fq_name=self.extract_fq_name(func),
             description=self.extract_doctring_from_func(func),
-            inputs=self.extract_inputs_from_func(func),
-            outputs=self.extract_outputs_from_func(func),
-            callees=self.extract_callees(func, exposed_funcs, dependencies),
+            inputs=self.extract_inputs_from_func(func, func_id, is_entry_point),
+            outputs=self.extract_outputs_from_func(func, func_id, is_entry_point),
+            callees=self.extract_callees(func, func_id, exposed_funcs, dependencies),
         )
 
-    def extract_fq_name(self, func: FunctionType) -> str:
+    def extract_id_from_func(self, func: FunctionType, caller_id: str) -> str:
         # return f'.{node.name}'
-        return func.__name__
+        if not caller_id:
+            return func.__name__
+        return f'{caller_id}.{func.__name__}'
 
     def extract_doctring_from_func(self, func: FunctionType) -> str:
         return func.__doc__ or ''
 
-    def extract_inputs_from_func(self, func: FunctionType) -> list[Input]:
+    def extract_inputs_from_func(
+        self, func: FunctionType, callee_id: str, is_entry_point: bool
+    ) -> list[Input]:
         sig = inspect.signature(func)
-        return [self.extract_input_from_func(n, p) for n, p in sig.parameters.items()]
+        return [
+            self.extract_input_from_func(n, p, callee_id, is_entry_point)
+            for n, p in sig.parameters.items()
+        ]
 
     @staticmethod
-    def extract_input_from_func(name: str, param: inspect.Parameter) -> Input:
-        if param.default is param.empty:
-            schema_for_default = None
-        else:
-            schema_for_default = schema(default=param.default)
+    def extract_input_from_func(
+        name: str, param: inspect.Parameter, callee_id: str, is_entry_point: bool
+    ) -> Input:
         if param.annotation is inspect._empty:
             tp = Any
         else:
             tp = param.annotation
 
         try:
-            json_schema = serialization_schema(tp, schema=schema_for_default)
+            json_schema = serialization_schema(tp)
         except Exception as exc:
             logger.error(
                 f'Could not get serialization schema for input {name} ({tp}): '
                 f'{type(exc).__name__}: {exc}'
             )
-            json_schema = serialization_schema(Any, schema=schema_for_default)
+            json_schema = serialization_schema(Any)
+
+        # Currently, only the inputs of the entry point can be modified
+        modifiable = is_entry_point
+        required = is_entry_point and param.default is param.empty
+        value = None
+        if param.default is not param.empty:
+            try:
+                json.dumps(param.default)
+            except TypeError:
+                # XXX default value cannot serialized and cannot be used by the client
+                modifiable = False
+            else:
+                # XXX The default value could be different from the value actually set
+                # by the caller. But we don't handle yet this case
+                json_schema |= {'default': param.default}
+                value = param.default
 
         input_ = Input(
+            id=f'{callee_id}.{name}',
             name=name,
-            fq_name=name,
             json_schema=json_schema,
+            modifiable=modifiable,
+            required=required,
+            value=value,
         )
         return input_
 
-    def extract_outputs_from_func(self, func: FunctionType) -> list[Output]:
+    def extract_outputs_from_func(
+        self, func: FunctionType, callee_id: str, is_entry_point: bool
+    ) -> list[Output]:
         tp_return = func.__annotations__.get('return')
         tp_outputs = self.extract_output_types(tp_return)
-        return [self.extract_output(n, tp) for n, tp in tp_outputs.items()]
+        return [
+            self.extract_output(n, tp, callee_id, is_entry_point)
+            for n, tp in tp_outputs.items()
+        ]
 
     @staticmethod
     def extract_output_types(tp: AnyType) -> dict:
@@ -159,8 +197,12 @@ class TransformBuilder:
 
         return {0: tp}
 
-    def extract_output(self, name: str, tp: AnyType) -> Output:
-        tp, content_type = self.extract_output_content_type(tp)
+    def extract_output(
+        self, name: str, tp: AnyType, callee_id: str, is_entry_point: bool
+    ) -> Output:
+        tp, annotations = self.extract_output_annotations(tp)
+        content_type = annotations.get('content_type', '*/*')
+
         try:
             json_schema = serialization_schema(tp)
         except Exception as exc:
@@ -169,43 +211,70 @@ class TransformBuilder:
                 f'{type(exc).__name__}: {exc}'
             )
             json_schema = serialization_schema(Any)
+
+        transfer = self.extract_output_transfer(
+            json_schema, content_type, is_entry_point
+        )
+
         output = Output(
+            id=f'{callee_id}.{name}',
             name=name,
-            content_type=content_type.mimetype if content_type else None,
+            content_type=content_type,
+            encoding=annotations.get('encoding', {}),
             json_schema=json_schema,
+            transfer=transfer,
         )
         return output
 
     @staticmethod
-    def extract_output_content_type(tp: AnyType) -> tuple[AnyType, ContentType | None]:
+    def extract_output_annotations(tp: AnyType) -> tuple[AnyType, Mapping[str, Any]]:
         origin = get_origin(tp)
         if origin is not Annotated:
-            return tp, None
+            return tp, {}
         args = get_args(tp)
         new_origin = args[0]
         new_args = [new_origin]
-        content_type: ContentType | None = None
+        annotations: dict[str, Any] = {}
         for arg in args[1:]:
-            if isinstance(arg, ContentType):
-                content_type = arg
+            if isinstance(arg, Mapping):
+                annotations |= arg
             else:
                 new_args.append(arg)
-        if content_type:
-            if len(new_args) > 1:
-                tp = Annotated[tuple(new_args)]
-            else:
-                tp = new_origin
-        return tp, content_type
+        if len(new_args) > 1:
+            tp = Annotated[tuple(new_args)]
+        else:
+            tp = new_origin
+        return tp, annotations
+
+    @staticmethod
+    def extract_output_transfer(
+        json_schema: Mapping[str, Any], content_type: str, is_entry_point: bool
+    ):
+        if not is_entry_point:
+            return 'ignore'
+
+        if content_type == '*/*':
+            # we don't know what it is but we will attempt to send it as JSON.
+            return 'json'
+
+        if 'type' in json_schema:
+            # it means that the JSON schema is valid
+            return 'json'
+
+        return 'uri'
 
     def extract_callees(
         self,
         func: FunctionType,
+        caller_id: str,
         exposed_funcs: dict[str, FunctionType],
         dependencies: dict[str, list[str]],
     ) -> list[ExposedFunction]:
         return [
             self.extract_exposed_function(
                 exposed_funcs[f],
+                caller_id,
+                False,
                 exposed_funcs,
                 dependencies,
             )

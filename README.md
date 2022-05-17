@@ -136,11 +136,11 @@ session.headers['Authorization'] = f'Bearer {access_token}'
 
 # Create transform
 transform_in = {
-    'name': "Test transformation",
+    'name': 'Test transformation',
     'public': True,
-    'language': "python",
+    'language': 'python',
     'source': SOURCE,
-    'entry_point': {"name": "pipeline"}
+    'entry_point': {'name': 'pipeline'}
 }
 response = session.post(f'{SERVER_URL}/transforms', json=transform_in)
 response.raise_for_status()
@@ -149,14 +149,17 @@ transform = response.json()
 # Create job
 job_in = {
     'transform_id': transform['_id'],
-    'inputs': {
-        'url': f'{DATA_URL}:9000/test-bucket-staging/list.pickle',
-    },
+    'inputs': [
+        {
+            'id': 'pipeline.url',
+            'value': f'{DATA_URL}:9000/test-bucket-staging/list.pickle',
+        },
+    ],
 }
 response = session.post(f'{SERVER_URL}/jobs', json=job_in)
 response.raise_for_status()
 job = response.json()
-print(job['results'])
+print(job['outputs'])
 ```
 
 [MongoDB]: https://www.mongodb.com "MongoDB NoSQL homepage"

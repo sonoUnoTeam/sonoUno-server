@@ -2,32 +2,27 @@
 """
 from __future__ import annotations
 
-from typing import Any, Literal
+from typing import Literal
 
 from beanie import Document, Indexed, PydanticObjectId
 from pydantic import BaseModel
 
+from .variables import Input, Output
+
 # pylint: disable=too-few-public-methods
 
 
-class Input(BaseModel):
-    name: str
-    fq_name: str
-    json_schema: dict[str, Any]
-
-
-class Output(BaseModel):
-    name: str
-    content_type: str | None
-    json_schema: dict[str, Any]
-
-
 class ExposedFunction(BaseModel):
-    name: str
+    id: str = ''
+    name: str = ''
     description: str = ''
-    inputs: list[Input] | None = None
-    outputs: list[Output] | None = None
-    callees: list[ExposedFunction] | None = None
+    inputs: list[Input] = []
+    outputs: list[Output] = []
+    callees: list[ExposedFunction] = []
+
+    def walk_callees(self) -> list[ExposedFunction]:
+        """Walks the callee dependency graph depth-first."""
+        return sum((c.walk_callees() for c in self.callees), [])
 
 
 class TransformIn(BaseModel):
@@ -45,3 +40,7 @@ class Transform(TransformIn, Document):
     """The transform, as stored in the database and returned to the user."""
 
     user_id: Indexed(PydanticObjectId)  # type: ignore[valid-type]
+
+    def walk_callees(self) -> list[ExposedFunction]:
+        """Walks the callee dependency graph depth-first, including the entry point."""
+        return [self.entry_point] + self.entry_point.walk_callees()
