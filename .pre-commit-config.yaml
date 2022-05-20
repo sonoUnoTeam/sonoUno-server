@@ -86,6 +86,7 @@ repos:
     - pytest-stub
     - scipy
     - streamunolib
+    - types-Pillow
     args:
 #    - --strict
     - --config-file=backend/pyproject.toml

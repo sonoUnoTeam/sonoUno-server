@@ -3,12 +3,12 @@ import json
 import logging
 from http.client import HTTPException
 from types import FunctionType
-from typing import Annotated, Any, Mapping, get_args, get_origin
+from typing import Annotated, Any, Mapping, cast, get_args, get_origin
 
 from apischema.json_schema import serialization_schema
 
 from ..models import ExposedFunction, Input, Output, Transform, TransformIn, User
-from ..types import AnyType
+from ..types import AnyType, JSONSchema
 from ..util.call_dependencies import CallDependencyResolver
 
 logger = logging.getLogger(__name__)
@@ -201,43 +201,40 @@ class TransformBuilder:
         self, name: str, tp: AnyType, callee_id: str, is_entry_point: bool
     ) -> Output:
         tp, annotations = self.extract_output_annotations(tp)
-        content_type = annotations.get('content_type', '*/*')
 
         try:
             json_schema = serialization_schema(tp)
         except Exception as exc:
-            logger.error(
+            logger.exception(
                 f'Could not get serialization schema for output {name} ({tp}): '
                 f'{type(exc).__name__}: {exc}'
             )
             json_schema = serialization_schema(Any)
+        json_schema = cast(JSONSchema, json_schema)
+        json_schema.update(annotations)
 
-        transfer = self.extract_output_transfer(
-            json_schema, content_type, is_entry_point
-        )
+        transfer = self.extract_output_transfer(json_schema, is_entry_point)
 
         output = Output(
             id=f'{callee_id}.{name}',
             name=name,
-            content_type=content_type,
-            encoding=annotations.get('encoding', {}),
             json_schema=json_schema,
             transfer=transfer,
         )
         return output
 
     @staticmethod
-    def extract_output_annotations(tp: AnyType) -> tuple[AnyType, Mapping[str, Any]]:
+    def extract_output_annotations(tp: AnyType) -> tuple[AnyType, JSONSchema]:
         origin = get_origin(tp)
         if origin is not Annotated:
             return tp, {}
         args = get_args(tp)
         new_origin = args[0]
         new_args = [new_origin]
-        annotations: dict[str, Any] = {}
+        annotations: JSONSchema = {}
         for arg in args[1:]:
             if isinstance(arg, Mapping):
-                annotations |= arg
+                annotations |= cast(JSONSchema, arg)
             else:
                 new_args.append(arg)
         if len(new_args) > 1:
@@ -247,14 +244,13 @@ class TransformBuilder:
         return tp, annotations
 
     @staticmethod
-    def extract_output_transfer(
-        json_schema: Mapping[str, Any], content_type: str, is_entry_point: bool
-    ):
+    def extract_output_transfer(json_schema: JSONSchema, is_entry_point: bool):
         if not is_entry_point:
+            # currently, we only capture the entry point outputs
             return 'ignore'
 
-        if content_type == '*/*':
-            # we don't know what it is but we will attempt to send it as JSON.
+        if 'contentMediaType' not in json_schema:
+            # we don't know what it is but we will attempt to send it as JSON
             return 'json'
 
         if 'type' in json_schema:

@@ -1,8 +1,8 @@
-from typing import Any, Literal, Mapping
+from typing import Any
 
 from pydantic import BaseModel
 
-TransferType = Literal['ignore', 'json', 'uri']
+from ..types import JSONSchema, TransferType
 
 
 class InputIn(BaseModel):
@@ -12,21 +12,19 @@ class InputIn(BaseModel):
 
 class Input(InputIn):
     name: str
-    json_schema: Mapping[str, Any]
+    json_schema: JSONSchema
     required: bool
     modifiable: bool
 
 
 class OutputIn(BaseModel):
     id: str
-    content_type: str = '*/*'
-    encoding: dict[str, Any] = {}
+    json_schema: JSONSchema
     transfer: TransferType = 'ignore'
 
 
 class Output(OutputIn):
     name: str
-    json_schema: Mapping[str, Any]
 
 
 class OutputWithValue(Output):

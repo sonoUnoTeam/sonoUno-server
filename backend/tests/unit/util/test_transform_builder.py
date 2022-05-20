@@ -4,7 +4,7 @@ import pytest
 
 from sonouno_server.models import TransformIn
 from sonouno_server.util.transform_builder import TransformBuilder
-from streamunolib import content_type
+from streamunolib import media_type
 from tests.data import create_user
 
 
@@ -79,27 +79,27 @@ def pipeline(){return_type}:
     [
         (int, int, {}),
         (Annotated[int, 4], Annotated[int, 4], {}),
-        (Annotated[int, content_type('jpg')], int, {'content_type': 'image/jpeg'}),
+        (Annotated[int, media_type('jpg')], int, {'contentMediaType': 'image/jpeg'}),
         (
-            Annotated[int, 2, content_type('jpg')],
+            Annotated[int, 2, media_type('jpg')],
             Annotated[int, 2],
-            {'content_type': 'image/jpeg'},
+            {'contentMediaType': 'image/jpeg'},
         ),
         (
-            Annotated[int, 2, content_type('jpg'), 3],
+            Annotated[int, 2, media_type('jpg'), 3],
             Annotated[int, 2, 3],
-            {'content_type': 'image/jpeg'},
+            {'contentMediaType': 'image/jpeg'},
         ),
         (
-            Annotated[int, content_type('jpg'), 3],
+            Annotated[int, media_type('jpg'), 3],
             Annotated[int, 3],
-            {'content_type': 'image/jpeg'},
+            {'contentMediaType': 'image/jpeg'},
         ),
         (Annotated[int, {}], int, {}),
         (
-            Annotated[int, content_type('jpg') | {'encoding': {}}],
+            Annotated[int, media_type('image', info=None)],
             int,
-            {'content_type': 'image/jpeg', 'encoding': {}},
+            {'contentMediaType': 'image/*', 'x-contentMediaEncoding': {'info': None}},
         ),
     ],
 )

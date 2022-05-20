@@ -74,7 +74,13 @@ class JobBuilder:
             output = transform_output.dict()
             job_output = job_outputs.get(transform_output.id)
             if job_output:
-                for field in job_output.__fields_set__ - {'id'}:
+                for field in job_output.__fields_set__ - {'id', 'schema'}:
                     output[field] = getattr(job_output, field)
+                # XXX here we should merge the transform & job content_type
+                schema = transform_output.json_schema
+                type_ = schema.get('type')
+                content_type = schema.get('contentMediaType')
+                if type_ is None and content_type in {None, 'application/*'}:
+                    schema['contentMediaType'] = 'application/octet-stream'
             outputs.append(OutputWithValue(**output))
         return outputs
