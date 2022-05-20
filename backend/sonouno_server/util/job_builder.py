@@ -3,7 +3,7 @@ from http.client import HTTPException
 
 from ..models import Input, Job, JobIn, Output, Transform, User
 from ..models.variables import OutputIn, OutputWithValue
-from .schemas import merge_schemas, schema_validates_any
+from .schemas import merge_schemas
 
 logger = logging.getLogger(__name__)
 
@@ -89,12 +89,6 @@ class JobBuilder:
                 output[field] = getattr(job_output, field)
 
             schema = merge_schemas(schema, job_output.json_schema)
-            content_type = schema.get('contentMediaType')
-            if schema_validates_any(schema) and content_type in {
-                None,
-                'application/*',
-            }:
-                schema['contentMediaType'] = 'application/octet-stream'
 
         output['schema'] = schema
 

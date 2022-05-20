@@ -7,11 +7,10 @@ from typing import Annotated, Any, Mapping, cast, get_args, get_origin
 
 from apischema.json_schema import serialization_schema
 
-from sonouno_server.util.schemas import schema_validates_any
-
 from ..models import ExposedFunction, Input, Output, Transform, TransformIn, User
 from ..types import AnyType, JSONSchema
 from ..util.call_dependencies import CallDependencyResolver
+from ..util.schemas import is_known_schema
 
 logger = logging.getLogger(__name__)
 
@@ -256,7 +255,7 @@ class TransformBuilder:
             # we don't know what it is but we will attempt to send it as JSON
             return 'json'
 
-        if not schema_validates_any(schema):
+        if is_known_schema(schema):
             # it means that the JSON schema is defined and valid
             return 'json'
 

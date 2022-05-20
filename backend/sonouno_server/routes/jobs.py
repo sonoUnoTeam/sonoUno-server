@@ -2,9 +2,11 @@
 """
 import json
 import mimetypes
+import pickle
 from datetime import datetime
 from io import BytesIO
-from typing import Any
+from logging import getLogger
+from typing import Any, Mapping
 from uuid import uuid4
 
 import numpy as np
@@ -14,12 +16,14 @@ from fastapi import APIRouter, Depends, HTTPException
 from ..app import app
 from ..config import CONFIG
 from ..models import Job, JobIn, OutputWithValue, Transform, User
+from ..types import JSONSchema
 from ..util.current_user import current_user
 from ..util.encoders import numpy_encode
 from ..util.job_builder import JobBuilder
 from ..util.schemas import merge_schema_with_value
 
 router = APIRouter(prefix='/jobs', tags=['Jobs'])
+logger = getLogger(__name__)
 
 
 @router.post('', response_model=Job)
@@ -33,7 +37,8 @@ async def create(job_in: JobIn, user: User = Depends(current_user)):
     await job.create()
 
     values = run_job(job, transform)
-    transfer_values(values, job)
+    update_job_schemas_with_values(job, values)
+    transfer_values(job, values)
 
     job.done_at = datetime.utcnow()
     await job.replace()
@@ -42,7 +47,20 @@ async def create(job_in: JobIn, user: User = Depends(current_user)):
 
 @router.get('/{id}', response_model=Job)
 async def get(id: PydanticObjectId, user: User = Depends(current_user)):
-    """Gets a job."""
+    """Gets a job.
+
+    Notes:
+        The schema of the returned outputs are ensured to have at least one of the
+        following properties defined:
+            * `type`
+            * `enum`
+            * `const`
+            * `contentMediaType`
+        It proceeds that if the schema validates against all instances (when `type`,
+        `enum` and `const` are not set), a content type is defined (contentMediaType has
+        the value of a MIME type).
+
+    """
     job = await Job.get(document_id=id)
     if not job:
         raise HTTPException(404, 'Unknown job.')
@@ -51,7 +69,7 @@ async def get(id: PydanticObjectId, user: User = Depends(current_user)):
     return job
 
 
-def run_job(job: Job, transform: Transform) -> dict[str, Any]:
+def run_job(job: Job, transform: Transform) -> Mapping[str, Any]:
     """Very naively injects the inputs and extracts the outputs of the job."""
     locals_ = {'zzz_inputs': prepare_inputs(job)}
     # XXX it should be executed in a container
@@ -60,15 +78,15 @@ def run_job(job: Job, transform: Transform) -> dict[str, Any]:
         + f'\nzzz_results = {transform.entry_point.name}(**zzz_inputs)\n'
     )
     exec(source, locals_, locals_)
-    return prepare_values(locals_['zzz_results'], transform)
+    return prepare_outputs(locals_['zzz_results'], transform)
 
 
-def prepare_inputs(job: Job) -> dict[str, Any]:
+def prepare_inputs(job: Job) -> Mapping[str, Any]:
     # XXX only the values of the entry point inputs can be modified
     return {i.name: i.value for i in job.inputs}
 
 
-def prepare_values(results: Any, transform: Transform) -> dict[str, Any]:
+def prepare_outputs(results: Any, transform: Transform) -> Mapping[str, Any]:
     """Unpacks the value returned by the transform entry point.
 
     Arguments:
@@ -90,30 +108,109 @@ def prepare_values(results: Any, transform: Transform) -> dict[str, Any]:
     return dict(zip((o.id for o in transform.entry_point.outputs), results))
 
 
-def transfer_values(values: dict[str, Any], job: Job) -> None:
-    """Copies job output values to job or MinIO.
+def update_job_schemas_with_values(job: Job, values: Mapping[str, Any]) -> None:
+    for output_id, value in values.items():
+        output = next(o for o in job.outputs if o.id == output_id)
+        output.json_schema = merge_schema_with_value(output.json_schema, value)
+
+
+def transfer_values(job: Job, values: Mapping[str, Any]) -> None:
+    """Copies job output values to the current job or MinIO.
 
     Arguments:
-        values: The output id to value mapping.
         job: The executed job.
+        values: The output id to value mapping.
     """
     for output_id, value in values.items():
         output = next(o for o in job.outputs if o.id == output_id)
-        transfer_value(value, output, job)
+        if 'contentMediaType' in output.json_schema:
+            output.value = get_value_with_known_content_type(job, output, value)
+        else:
+            output.value = get_value_with_known_schema(job, output, value)
 
 
-def transfer_value(value: Any, output: OutputWithValue, job: Job) -> None:
-    """Copies one output value to job or MinIO.
+def get_value_with_known_content_type(
+    job: Job, output: OutputWithValue, value: Any
+) -> str | None:
+    """Copies an output value with known content type to the current job or MinIO.
 
     Arguments:
-        values: The value returned by the job for the current job output.
-        output: The current job output.
         job: The executed job.
+        output: The current job output.
+        value: The value of the job output as returned by the job execution.
     """
-    if output.transfer == 'json':
-        if 'contentEncoding' in output.json_schema:
-            raise NotImplementedError('String-encoded JSON is not implemented.')
+    if output.transfer == 'ignore':
+        return None
 
+    buffer, ext = get_buffer_from_value(output.json_schema, value)
+
+    if output.transfer == 'json':
+        raise NotImplementedError('String-encoded JSON is not implemented.')
+
+    if output.transfer == 'uri':
+        return store_value(job, output, buffer, ext)
+
+    raise
+
+
+def get_buffer_from_value(schema: JSONSchema, value: Any) -> tuple[BytesIO, str]:
+    """Returns the content of the job output as a binary buffer.
+
+    Arguments:
+        schema: The JSON schema if the job output.
+        value: The value of the job output as returned by the job execution.
+
+    Returns: A tuple containing
+        * the binary buffer associated to the output value,
+        * the file extension for the output value.
+    """
+    assert 'contentMediaType' in schema
+    content_type = schema['contentMediaType']
+    assert content_type is not None
+
+    ext = mimetypes.guess_extension(content_type) or ''
+
+    buffer: BytesIO
+
+    if isinstance(value, BytesIO):
+        buffer = value
+
+    elif isinstance(value, np.ndarray):
+        buffer = numpy_encode(value, schema)
+        if content_type == 'application/octet-stream':
+            ext = '.npz'
+
+    elif content_type == 'application/json':
+        buffer = BytesIO()
+        buffer.write(json.dumps(value).encode())
+
+    elif content_type == 'application/octet-stream':
+        buffer = BytesIO()
+        buffer.write(pickle.dumps(value))
+        ext = '.pickle'
+
+    else:
+        raise TypeError(
+            f'Cannot encode values of type {type(value).__name__!r} into '
+            f'{content_type!r}.'
+        )
+
+    buffer.seek(0)
+    return buffer, ext
+
+
+def get_value_with_known_schema(job: Job, output: OutputWithValue, value: Any) -> Any:
+    """Copies one output with validated json schema to the current job or MinIO.
+
+    Arguments:
+        job: The executed job.
+        output: The current job output.
+        value: The value of the job output as returned by the job execution.
+    """
+    if output.transfer == 'ignore':
+        return None
+
+    if output.transfer == 'json':
         try:
             json.dumps(value)
 
@@ -122,49 +219,33 @@ def transfer_value(value: Any, output: OutputWithValue, job: Job) -> None:
                 422, f'Output {output.id} is not json-serializable: {value}'
             )
 
-        output.value = value
+        return value
 
-    elif output.transfer == 'uri':
-        output.value = transfer_uri(value, output, job)
+    if output.transfer == 'uri':
+        output.json_schema['contentMediaType'] = 'application/json'
+        buffer = BytesIO()
+        buffer.write(json.dumps(value).encode())
+        return store_value(job, output, buffer, '.json')
+
+    raise
 
 
-def transfer_uri(value: Any, output: OutputWithValue, job: Job) -> str:
+def store_value(job: Job, output: OutputWithValue, buffer: BytesIO, ext: str) -> str:
     """Stores value in MinIO."""
 
-    buffer: BytesIO
-    output.json_schema = merge_schema_with_value(output.json_schema, value)
     content_type = output.json_schema.get('contentMediaType')
-    if content_type is None:
-        raise NotImplementedError('Should be pickled in a file')
-    output.json_schema['contentMediaType'] = content_type
+    assert content_type is not None
 
     uid = str(uuid4()).replace('-', '')[:6]
-    ext = mimetypes.guess_extension(content_type)
     output_id = output.id.replace('.', '-').replace('_', '-')
     name = f'job-{job.id}/{output_id}-{uid}{ext}'
 
-    if isinstance(value, np.ndarray):
-        buffer = numpy_encode(value, output.json_schema)
-        if content_type == 'application/octet-stream':
-            ext = '.npz'
-
-    elif isinstance(value, BytesIO):
-        buffer = value
-
-    elif content_type == 'application/json':
-        buffer = BytesIO()
-        buffer.write(json.dumps(value).encode())
-
-    else:
-        raise NotImplementedError
-
-    buffer.seek(0)
     length = buffer.getbuffer().nbytes
 
     client = app.state.minio
     result = client.put_object(
         'jobs', name, buffer, length=length, content_type=content_type
     )
-    print(f'MINIO: result put_object: {dir(result)}')
+    logger.info(f'MinIO: put_object: {dir(result)}')
 
     return f'{CONFIG.server_host}:9000/jobs/{name}'

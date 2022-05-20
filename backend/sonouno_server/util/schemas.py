@@ -15,16 +15,16 @@ DEFAULT_CONTENT_TYPE = {
 REGEX_MIME_TYPE = re.compile(r'(application|audio|image|text|video)/(\*|[a-z0-9-]+)$')
 
 
-def schema_validates_any(schema: JSONSchema) -> bool:
-    """Returns true if the input schema validates any instance.
+def is_known_schema(schema: JSONSchema) -> bool:
+    """Returns true if the input schema does not validate any instance.
 
     Arguments:
         schema: The input JSON schema.
 
     Returns:
-       True when the JSON schema has no `type`, `enum` and `const` properties.
+       True when the JSON schema has a `type`, `enum` or `const` property.
     """
-    return 'type' not in schema and 'enum' not in schema and 'const' not in schema
+    return 'type' in schema or 'enum' in schema or 'const' in schema
 
 
 def merge_schemas(schema: JSONSchema, requested_schema: JSONSchema) -> JSONSchema:
@@ -112,7 +112,18 @@ def merge_dicts_or_nones(value1: T | None, value2: T | None) -> T | None:
 
 
 def merge_schema_with_value(schema: JSONSchema, value: Any) -> JSONSchema:
-    if not schema_validates_any(schema):
+    """Includes the content type information that can be inferred from the job output
+    value in the job output schema.
+
+    Arguments:
+        schema: The JSON schema of the output.
+        value: The value of the output.
+
+    Returns:
+        The JSON schema enriched from the content type information that can be inferred
+        from the actual value of the job output.
+    """
+    if is_known_schema(schema):
         return schema
 
     requested_content_type = schema.get('contentMediaType')
