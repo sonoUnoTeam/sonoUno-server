@@ -7,6 +7,8 @@ from typing import Annotated, Any, Mapping, cast, get_args, get_origin
 
 from apischema.json_schema import serialization_schema
 
+from sonouno_server.util.schemas import schema_validates_any
+
 from ..models import ExposedFunction, Input, Output, Transform, TransformIn, User
 from ..types import AnyType, JSONSchema
 from ..util.call_dependencies import CallDependencyResolver
@@ -138,6 +140,7 @@ class TransformBuilder:
                 f'{type(exc).__name__}: {exc}'
             )
             json_schema = serialization_schema(Any)
+        json_schema = cast(JSONSchema, json_schema)
 
         # Currently, only the inputs of the entry point can be modified
         modifiable = is_entry_point
@@ -158,7 +161,7 @@ class TransformBuilder:
         input_ = Input(
             id=f'{callee_id}.{name}',
             name=name,
-            json_schema=json_schema,
+            schema=json_schema,
             modifiable=modifiable,
             required=required,
             value=value,
@@ -218,7 +221,7 @@ class TransformBuilder:
         output = Output(
             id=f'{callee_id}.{name}',
             name=name,
-            json_schema=json_schema,
+            schema=json_schema,
             transfer=transfer,
         )
         return output
@@ -244,17 +247,17 @@ class TransformBuilder:
         return tp, annotations
 
     @staticmethod
-    def extract_output_transfer(json_schema: JSONSchema, is_entry_point: bool):
+    def extract_output_transfer(schema: JSONSchema, is_entry_point: bool):
         if not is_entry_point:
             # currently, we only capture the entry point outputs
             return 'ignore'
 
-        if 'contentMediaType' not in json_schema:
+        if 'contentMediaType' not in schema:
             # we don't know what it is but we will attempt to send it as JSON
             return 'json'
 
-        if 'type' in json_schema:
-            # it means that the JSON schema is valid
+        if not schema_validates_any(schema):
+            # it means that the JSON schema is defined and valid
             return 'json'
 
         return 'uri'

@@ -15,8 +15,9 @@ from ..app import app
 from ..config import CONFIG
 from ..models import Job, JobIn, OutputWithValue, Transform, User
 from ..util.current_user import current_user
-from ..util.encoders import NumpyEncoder, get_content_type
+from ..util.encoders import numpy_encode
 from ..util.job_builder import JobBuilder
+from ..util.schemas import merge_schema_with_value
 
 router = APIRouter(prefix='/jobs', tags=['Jobs'])
 
@@ -131,7 +132,8 @@ def transfer_uri(value: Any, output: OutputWithValue, job: Job) -> str:
     """Stores value in MinIO."""
 
     buffer: BytesIO
-    content_type = get_content_type(value, output.json_schema)
+    output.json_schema = merge_schema_with_value(output.json_schema, value)
+    content_type = output.json_schema.get('contentMediaType')
     if content_type is None:
         raise NotImplementedError('Should be pickled in a file')
     output.json_schema['contentMediaType'] = content_type
@@ -142,9 +144,7 @@ def transfer_uri(value: Any, output: OutputWithValue, job: Job) -> str:
     name = f'job-{job.id}/{output_id}-{uid}{ext}'
 
     if isinstance(value, np.ndarray):
-        encoder = NumpyEncoder()
-        encoding = output.json_schema.get('x-contentMediaEncoding', {})
-        buffer = encoder.encode(value, content_type, encoding)
+        buffer = numpy_encode(value, output.json_schema)
         if content_type == 'application/octet-stream':
             ext = '.npz'
 

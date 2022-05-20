@@ -16,11 +16,17 @@ class Input(InputIn):
     required: bool
     modifiable: bool
 
+    class Config:
+        fields = {'json_schema': 'schema'}
+
 
 class OutputIn(BaseModel):
     id: str
     json_schema: JSONSchema
     transfer: TransferType = 'ignore'
+
+    class Config:
+        fields = {'json_schema': 'schema'}
 
 
 class Output(OutputIn):
@@ -28,4 +34,4 @@ class Output(OutputIn):
 
 
 class OutputWithValue(Output):
-    value: Any
+    value: Any = None

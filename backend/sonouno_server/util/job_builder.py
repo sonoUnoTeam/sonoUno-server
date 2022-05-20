@@ -1,9 +1,9 @@
 import logging
 from http.client import HTTPException
 
-from sonouno_server.models.variables import OutputWithValue
-
 from ..models import Input, Job, JobIn, Output, Transform, User
+from ..models.variables import OutputIn, OutputWithValue
+from .schemas import merge_schemas, schema_validates_any
 
 logger = logging.getLogger(__name__)
 
@@ -71,16 +71,31 @@ class JobBuilder:
         for transform_output in transform_outputs.values():
             if transform_output.transfer == 'ignore':
                 continue
-            output = transform_output.dict()
-            job_output = job_outputs.get(transform_output.id)
-            if job_output:
-                for field in job_output.__fields_set__ - {'id', 'schema'}:
-                    output[field] = getattr(job_output, field)
-                # XXX here we should merge the transform & job content_type
-                schema = transform_output.json_schema
-                type_ = schema.get('type')
-                content_type = schema.get('contentMediaType')
-                if type_ is None and content_type in {None, 'application/*'}:
-                    schema['contentMediaType'] = 'application/octet-stream'
-            outputs.append(OutputWithValue(**output))
+            output = self.extract_output(transform_output, job_outputs)
+            outputs.append(output)
+
         return outputs
+
+    def extract_output(
+        self, transform_output: Output, job_outputs: dict[str, OutputIn]
+    ) -> OutputWithValue:
+        output = transform_output.dict()
+        # dict() do not handle aliases
+        schema = output.pop('json_schema')
+
+        job_output = job_outputs.get(transform_output.id)
+        if job_output:
+            for field in job_output.__fields_set__ - {'id', 'json_schema'}:
+                output[field] = getattr(job_output, field)
+
+            schema = merge_schemas(schema, job_output.json_schema)
+            content_type = schema.get('contentMediaType')
+            if schema_validates_any(schema) and content_type in {
+                None,
+                'application/*',
+            }:
+                schema['contentMediaType'] = 'application/octet-stream'
+
+        output['schema'] = schema
+
+        return OutputWithValue(**output)
