@@ -1,6 +1,8 @@
 import re
+from io import BytesIO
 from typing import Any, Mapping, TypeVar, cast
 
+import numpy
 from PIL import Image
 
 from ..types import JSONSchema
@@ -25,6 +27,18 @@ def is_known_schema(schema: JSONSchema) -> bool:
        True when the JSON schema has a `type`, `enum` or `const` property.
     """
     return 'type' in schema or 'enum' in schema or 'const' in schema
+
+
+def is_known_content_type(schema: JSONSchema) -> bool:
+    """Returns true if the content media type is defined in the JSON schema.
+
+    Arguments:
+        schema: The input JSON schema.
+
+    Returns:
+        True when the JSON schema has the `contentMediaType` property.
+    """
+    return 'contentMediaType' in schema
 
 
 def merge_schemas(schema: JSONSchema, requested_schema: JSONSchema) -> JSONSchema:
@@ -175,5 +189,9 @@ def merge_content_type_with_value(content_type: str | None, value: Any) -> str |
         if content_type_from_value != 'image/*':
             return content_type_from_value
         return content_type
+
+    if isinstance(value, (BytesIO, numpy.ndarray)):
+        if content_type is None:
+            content_type = 'application/octet-stream'
 
     return content_type

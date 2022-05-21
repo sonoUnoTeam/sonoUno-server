@@ -1,9 +1,12 @@
 from datetime import datetime
-from typing import Sequence
+from typing import Any, Iterator, Mapping, Sequence
 
 from beanie import Document, PydanticObjectId
 from pydantic import BaseModel
 
+from ..executors import LocalExecutor
+from ..models.transforms import Transform
+from ..util.schemas import merge_schema_with_value
 from .variables import Input, InputIn, OutputIn, OutputWithValue
 
 
@@ -25,3 +28,29 @@ class Job(JobIn, Document):
         if self.id is None:
             raise RuntimeError('Job has not been inserted in the database yet.')
         return self.id.generation_time
+
+    def get_executor(self, transform: Transform) -> LocalExecutor:
+        """Returns transform executor."""
+        return LocalExecutor(self, transform)
+
+    def iter_output_values(
+        self, values: Mapping[str, Any]
+    ) -> Iterator[tuple[OutputWithValue, Any]]:
+        """Iterates through the job outputs associated with input values.
+
+        Arguments:
+            values: An output id to value mapping.
+        """
+        for output_id, value in values.items():
+            output = next(o for o in self.outputs if o.id == output_id)
+            yield output, value
+
+    def update_job_schemas_with_values(self, values: Mapping[str, Any]) -> None:
+        """Merges content type information from the actual output values returned by the
+        execution of the job.
+
+        Arguments:
+            values: An output id to value mapping.
+        """
+        for output, value in self.iter_output_values(values):
+            output.json_schema = merge_schema_with_value(output.json_schema, value)

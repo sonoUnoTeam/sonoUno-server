@@ -8,6 +8,7 @@ from ..types import JSONSchema, MediaEncoding
 
 def numpy_encode(value: np.ndarray, schema: JSONSchema):
     content_type = schema.get('contentMediaType')
+    assert content_type is not None  # ensured by schemas.merge_content_type_with_value
     encoding = schema.get('x-contentMediaEncoding', {})
 
     if content_type == 'audio/x-wav':
@@ -16,7 +17,9 @@ def numpy_encode(value: np.ndarray, schema: JSONSchema):
     if content_type == 'application/octet-stream':
         return NumpyNPZEncoder().encode(value, encoding)
 
-    raise NotImplementedError(f'Cannot encode {content_type} ndarrays.')
+    raise NotImplementedError(
+        f'Cannot encode numpy arrays of content type {content_type!r}.'
+    )
 
 
 class NumpyWaveEncoder:

@@ -10,14 +10,9 @@ from apischema.json_schema import serialization_schema
 from ..models import ExposedFunction, Input, Output, Transform, TransformIn, User
 from ..types import AnyType, JSONSchema
 from ..util.call_dependencies import CallDependencyResolver
-from ..util.schemas import is_known_schema
+from ..util.schemas import is_known_content_type, is_known_schema
 
 logger = logging.getLogger(__name__)
-
-
-def exposed(f: FunctionType) -> FunctionType:
-    f.__exposed__ = True  # type: ignore[attr-defined]
-    return f
 
 
 def is_exposed(func: Any) -> bool:
@@ -105,7 +100,6 @@ class TransformBuilder:
         )
 
     def extract_id_from_func(self, func: FunctionType, caller_id: str) -> str:
-        # return f'.{node.name}'
         if not caller_id:
             return func.__name__
         return f'{caller_id}.{func.__name__}'
@@ -247,12 +241,28 @@ class TransformBuilder:
 
     @staticmethod
     def extract_output_transfer(schema: JSONSchema, is_entry_point: bool):
+        """Infers the default transfer mode from the output JSON schema.
+
+        Arguments:
+            schema: The JSON Schema of the output.
+            is_entry_point: True if the schema refers to an entry point output.
+
+        Returns:
+            * `ignore` when the schema does not describe an entry point output.
+            * `json` when the content type is unknown (no property `contentMediaType`
+                or when the schema validates a valid JSON instance (i.e. when any of
+                the properties `type`, `enum` or `const` are defined).
+            * `uri` otherwise, i.e. when the entry point output schema includes
+                a content type (presence of the property `contentMediaType` and it
+                validates any instance (i.e. no property `type`, `enum` and `const`).
+        """
         if not is_entry_point:
             # currently, we only capture the entry point outputs
             return 'ignore'
 
-        if 'contentMediaType' not in schema:
-            # we don't know what it is but we will attempt to send it as JSON
+        if not is_known_content_type(schema):
+            # the content type is unknown, we will attempt to send the output through
+            # JSON, even if the schema may not describe an instance validation.
             return 'json'
 
         if is_known_schema(schema):

@@ -1,8 +1,5 @@
-from .util.transform_builder import exposed
-
 __all__ = [
     '__version__',
-    'exposed',
 ]
 
 # version set by poetry build though poetry-dynamic-version-plugin
