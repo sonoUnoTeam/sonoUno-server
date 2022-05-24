@@ -1,10 +1,11 @@
 """Specific type hints used by the sonoUno server project."""
+from __future__ import annotations
 
 from typing import Any, Literal, TypedDict
 
 __all__ = [
     'AnyType',
-    'JSONSchema',
+    'JSONSchemaType',
     'JSONType',
     'MediaEncoding',
     'TransferType',
@@ -25,8 +26,8 @@ class MediaEncoding(TypedDict, total=False):
     rate: int
 
 
-JSONSchema = TypedDict(
-    'JSONSchema',
+JSONSchemaType = TypedDict(
+    'JSONSchemaType',
     {
         '$schema': str,
         '$id': str,
@@ -60,7 +61,7 @@ JSONSchema = TypedDict(
         # Contents of String-Encoded Data
         'contentMediaType': str,
         'contentEncoding': str,
-        'contentSchema': dict[str, Any],  # should be 'JSONSchema'
+        'contentSchema': dict[str, Any],  # should be 'JSONSchemaType'
         'x-contentMediaEncoding': MediaEncoding,
         # Basic Meta-Data Annotations
         'title': str,

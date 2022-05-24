@@ -2,7 +2,7 @@ from typing import Any
 
 from pydantic import BaseModel
 
-from ..types import JSONSchema, TransferType
+from ..types import JSONSchemaType, TransferType
 
 
 class InputIn(BaseModel):
@@ -12,7 +12,7 @@ class InputIn(BaseModel):
 
 class Input(InputIn):
     name: str
-    json_schema: JSONSchema
+    json_schema: JSONSchemaType
     required: bool
     modifiable: bool
 
@@ -22,7 +22,7 @@ class Input(InputIn):
 
 class OutputIn(BaseModel):
     id: str
-    json_schema: JSONSchema
+    json_schema: JSONSchemaType
     transfer: TransferType = 'ignore'
 
     class Config:

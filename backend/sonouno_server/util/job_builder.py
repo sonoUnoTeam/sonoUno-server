@@ -1,9 +1,17 @@
 import logging
 from http.client import HTTPException
 
-from ..models import Input, Job, JobIn, Output, Transform, User
-from ..models.variables import OutputIn, OutputWithValue
-from .schemas import merge_schemas
+from ..models import (
+    Input,
+    Job,
+    JobIn,
+    Output,
+    OutputIn,
+    OutputWithValue,
+    Transform,
+    User,
+)
+from ..schemas import JSONSchema
 
 logger = logging.getLogger(__name__)
 
@@ -79,17 +87,13 @@ class JobBuilder:
     def extract_output(
         self, transform_output: Output, job_outputs: dict[str, OutputIn]
     ) -> OutputWithValue:
-        output = transform_output.dict()
-        # dict() do not handle aliases
-        schema = output.pop('json_schema')
+        output = transform_output.dict(by_alias=True)
 
         job_output = job_outputs.get(transform_output.id)
         if job_output:
             for field in job_output.__fields_set__ - {'id', 'json_schema'}:
                 output[field] = getattr(job_output, field)
 
-            schema = merge_schemas(schema, job_output.json_schema)
-
-        output['schema'] = schema
+            output['schema'] = JSONSchema(output['json']) | job_output.json_schema
 
         return OutputWithValue(**output)

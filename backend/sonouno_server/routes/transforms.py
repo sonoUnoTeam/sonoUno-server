@@ -17,7 +17,6 @@ router = APIRouter(prefix='/transforms', tags=['Transforms'])
 async def create(transform_in: TransformIn, user: User = Depends(current_user)):
     """Creates a new transform."""
     transform = TransformBuilder(transform_in, user).create()
-    print('POST transform:', transform)
     await transform.create()
     return transform
 

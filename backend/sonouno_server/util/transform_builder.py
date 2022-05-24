@@ -8,9 +8,9 @@ from typing import Annotated, Any, Mapping, cast, get_args, get_origin
 from apischema.json_schema import serialization_schema
 
 from ..models import ExposedFunction, Input, Output, Transform, TransformIn, User
-from ..types import AnyType, JSONSchema
+from ..schemas import JSONSchema
+from ..types import AnyType, JSONSchemaType
 from ..util.call_dependencies import CallDependencyResolver
-from ..util.schemas import is_known_content_type, is_known_schema
 
 logger = logging.getLogger(__name__)
 
@@ -126,14 +126,13 @@ class TransformBuilder:
             tp = param.annotation
 
         try:
-            json_schema = serialization_schema(tp)
+            json_schema = JSONSchema(serialization_schema(tp))
         except Exception as exc:
             logger.error(
                 f'Could not get serialization schema for input {name} ({tp}): '
                 f'{type(exc).__name__}: {exc}'
             )
-            json_schema = serialization_schema(Any)
-        json_schema = cast(JSONSchema, json_schema)
+            json_schema = JSONSchema(serialization_schema(Any))
 
         # Currently, only the inputs of the entry point can be modified
         modifiable = is_entry_point
@@ -154,7 +153,7 @@ class TransformBuilder:
         input_ = Input(
             id=f'{callee_id}.{name}',
             name=name,
-            schema=json_schema,
+            schema=cast(JSONSchema, json_schema),
             modifiable=modifiable,
             required=required,
             value=value,
@@ -199,14 +198,13 @@ class TransformBuilder:
         tp, annotations = self.extract_output_annotations(tp)
 
         try:
-            json_schema = serialization_schema(tp)
+            json_schema = JSONSchema(serialization_schema(tp))
         except Exception as exc:
             logger.exception(
                 f'Could not get serialization schema for output {name} ({tp}): '
                 f'{type(exc).__name__}: {exc}'
             )
-            json_schema = serialization_schema(Any)
-        json_schema = cast(JSONSchema, json_schema)
+            json_schema = JSONSchema(serialization_schema(Any))
         json_schema.update(annotations)
 
         transfer = self.extract_output_transfer(json_schema, is_entry_point)
@@ -214,23 +212,23 @@ class TransformBuilder:
         output = Output(
             id=f'{callee_id}.{name}',
             name=name,
-            schema=json_schema,
+            schema=cast(JSONSchemaType, json_schema),
             transfer=transfer,
         )
         return output
 
     @staticmethod
-    def extract_output_annotations(tp: AnyType) -> tuple[AnyType, JSONSchema]:
+    def extract_output_annotations(tp: AnyType) -> tuple[AnyType, dict[str, Any]]:
         origin = get_origin(tp)
         if origin is not Annotated:
             return tp, {}
         args = get_args(tp)
         new_origin = args[0]
         new_args = [new_origin]
-        annotations: JSONSchema = {}
+        annotations: dict[str, Any] = {}
         for arg in args[1:]:
             if isinstance(arg, Mapping):
-                annotations |= cast(JSONSchema, arg)
+                annotations |= arg
             else:
                 new_args.append(arg)
         if len(new_args) > 1:
@@ -244,7 +242,7 @@ class TransformBuilder:
         """Infers the default transfer mode from the output JSON schema.
 
         Arguments:
-            schema: The JSON Schema of the output.
+            schema: The JSON schema of the output.
             is_entry_point: True if the schema refers to an entry point output.
 
         Returns:
@@ -260,12 +258,12 @@ class TransformBuilder:
             # currently, we only capture the entry point outputs
             return 'ignore'
 
-        if not is_known_content_type(schema):
+        if not schema.has_content_type():
             # the content type is unknown, we will attempt to send the output through
             # JSON, even if the schema may not describe an instance validation.
             return 'json'
 
-        if is_known_schema(schema):
+        if schema.has_json_schema():
             # it means that the JSON schema is defined and valid
             return 'json'
 

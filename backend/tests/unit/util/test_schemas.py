@@ -1,12 +1,12 @@
 import pytest
 
-from sonouno_server.util.schemas import split_content_type
+from sonouno_server.schemas import JSONSchema
 
 
 @pytest.mark.parametrize('type_', ['application', 'audio', 'image', 'text', 'video'])
 @pytest.mark.parametrize('subtype', ['a', '*'])
 def test_split_content_type(type_: str, subtype: str) -> None:
-    actual_type, actual_subtype = split_content_type(f'{type_}/{subtype}')
+    actual_type, actual_subtype = JSONSchema.split_content_type(f'{type_}/{subtype}')
     assert actual_type == type_
     assert actual_subtype == subtype
 
@@ -17,4 +17,4 @@ def test_split_content_type(type_: str, subtype: str) -> None:
 )
 def test_split_content_type_error(content_type: str) -> None:
     with pytest.raises(ValueError, match='Invalid media type'):
-        split_content_type(content_type)
+        JSONSchema.split_content_type(content_type)

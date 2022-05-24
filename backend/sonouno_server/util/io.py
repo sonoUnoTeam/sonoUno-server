@@ -1,8 +1,9 @@
 import json
+import logging
 import mimetypes
 import pickle
 from io import BytesIO
-from typing import Any, Mapping
+from typing import Any, Mapping, cast
 from uuid import uuid4
 
 import numpy
@@ -11,12 +12,13 @@ from fastapi import HTTPException
 from ..app import app
 from ..config import CONFIG
 from ..models import Job, OutputWithValue
-from ..routes.jobs import logger
-from ..types import JSONSchema
+from ..schemas import JSONSchema
+from ..types import JSONSchemaType
 from ..util.encoders import numpy_encode
-from ..util.schemas import is_known_content_type, is_known_schema
 
 __all__ = ['transfer_values']
+
+logger = logging.getLogger(__name__)
 
 
 def transfer_values(job: Job, values: Mapping[str, Any]) -> None:
@@ -29,9 +31,10 @@ def transfer_values(job: Job, values: Mapping[str, Any]) -> None:
     for output, value in job.iter_output_values(values):
         if output.transfer == 'ignore':
             continue
-        if is_known_content_type(output.json_schema):
+        json_schema = JSONSchema(output.json_schema)
+        if json_schema.has_content_type():
             output.value = get_value_with_known_content_type(job, output, value)
-        elif is_known_schema(output.json_schema):
+        elif json_schema.has_json_schema():
             output.value = get_value_with_known_schema(job, output, value)
         else:
             output.value = get_value_unknown(job, output, value)
@@ -54,7 +57,7 @@ def get_value_with_known_content_type(
         The string-encoded value for JSON transfer, otherwise the URI of the file
         encoding the output value according to its content type.
     """
-    buffer, ext = get_buffer_from_value(output.json_schema, value)
+    buffer, ext = get_buffer_from_value(cast(JSONSchemaType, output.json_schema), value)
 
     if output.transfer == 'json':
         # note: the schema may define a valid JSON schema, in which case it should
@@ -67,7 +70,7 @@ def get_value_with_known_content_type(
     raise
 
 
-def get_buffer_from_value(schema: JSONSchema, value: Any) -> tuple[BytesIO, str]:
+def get_buffer_from_value(schema: JSONSchemaType, value: Any) -> tuple[BytesIO, str]:
     """Returns the content of the job output as a binary buffer.
 
     Arguments:
@@ -172,7 +175,8 @@ def store_value(job: Job, output: OutputWithValue, buffer: BytesIO, ext: str) ->
     """Stores value in MinIO."""
 
     content_type = output.json_schema.get('contentMediaType')
-    assert content_type is not None
+    if not content_type:
+        raise ValueError('A content type is required to store a value.')
 
     uid = str(uuid4()).replace('-', '')[:6]
     output_id = output.id.replace('.', '-').replace('_', '-')

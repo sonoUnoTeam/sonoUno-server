@@ -3,10 +3,10 @@ from io import BytesIO
 import numpy as np
 from scipy.io import wavfile
 
-from ..types import JSONSchema, MediaEncoding
+from ..types import JSONSchemaType, MediaEncoding
 
 
-def numpy_encode(value: np.ndarray, schema: JSONSchema):
+def numpy_encode(value: np.ndarray, schema: JSONSchemaType):
     content_type = schema.get('contentMediaType')
     assert content_type is not None  # ensured by schemas.merge_content_type_with_value
     encoding = schema.get('x-contentMediaEncoding', {})

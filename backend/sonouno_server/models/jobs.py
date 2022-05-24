@@ -1,12 +1,13 @@
 from datetime import datetime
-from typing import Any, Iterator, Mapping, Sequence
+from typing import Any, Iterator, Mapping, Sequence, cast
 
 from beanie import Document, PydanticObjectId
 from pydantic import BaseModel
 
 from ..executors import LocalExecutor
 from ..models.transforms import Transform
-from ..util.schemas import merge_schema_with_value
+from ..schemas import JSONSchema
+from ..types import JSONSchemaType
 from .variables import Input, InputIn, OutputIn, OutputWithValue
 
 
@@ -53,4 +54,7 @@ class Job(JobIn, Document):
             values: An output id to value mapping.
         """
         for output, value in self.iter_output_values(values):
-            output.json_schema = merge_schema_with_value(output.json_schema, value)
+            output.json_schema = cast(
+                JSONSchemaType,
+                JSONSchema(output.json_schema).merge_with_value(value),
+            )
