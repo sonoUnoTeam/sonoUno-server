@@ -7,6 +7,7 @@ from typing import Any, Mapping, cast
 from uuid import uuid4
 
 import numpy
+import sonounolib
 from fastapi import HTTPException
 
 from ..app import app
@@ -14,7 +15,7 @@ from ..config import CONFIG
 from ..models import Job, OutputWithValue
 from ..schemas import JSONSchema
 from ..types import JSONSchemaType
-from ..util.encoders import numpy_encode
+from ..util.encoders import SonoUnoTrackEncoder, numpy_encode
 
 __all__ = ['transfer_values']
 
@@ -95,6 +96,10 @@ def get_buffer_from_value(schema: JSONSchemaType, value: Any) -> tuple[BytesIO, 
         buffer = numpy_encode(value, schema)
         if content_type == 'application/octet-stream':
             ext = '.npz'
+
+    elif isinstance(value, sonounolib.Track):
+        encoding = schema.get('x-contentMediaEncoding', {})
+        buffer = SonoUnoTrackEncoder().encode(value, encoding)
 
     elif content_type == 'application/json':
         buffer = BytesIO()

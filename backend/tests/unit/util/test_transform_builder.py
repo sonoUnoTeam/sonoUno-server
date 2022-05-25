@@ -104,6 +104,6 @@ def pipeline(){return_type}:
     ],
 )
 def test_transform_builder_annotations(tp, expected_tp, expected_annotations):
-    actual_tp, actual_annotations = TransformBuilder.extract_output_annotations(tp)
+    actual_tp, actual_annotations = TransformBuilder.extract_annotations(tp)
     assert actual_tp == expected_tp
     assert actual_annotations == expected_annotations

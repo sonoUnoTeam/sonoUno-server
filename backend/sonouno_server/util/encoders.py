@@ -1,6 +1,7 @@
 from io import BytesIO
 
 import numpy as np
+import sonounolib
 from scipy.io import wavfile
 
 from ..types import JSONSchemaType, MediaEncoding
@@ -25,27 +26,30 @@ def numpy_encode(value: np.ndarray, schema: JSONSchemaType):
 class NumpyWaveEncoder:
     DEFAULT_RATE = 44100
     DEFAULT_FORMAT = 'int16'
-    VALID_FORMATS = {'uint8', 'int16', 'int32', 'float32', 'float64'}
+    VALID_FORMATS = {'int16', 'int32', 'float32', 'float64'}
 
     def encode(self, value: np.ndarray, encoding: MediaEncoding) -> BytesIO:
         rate = encoding.get('rate', self.DEFAULT_RATE)
-        range = encoding.get('range', value.dtype.name)
         format = encoding.get('format')
+        max_amplitude = encoding.get('max_amplitude')
         if format is not None and format not in self.VALID_FORMATS:
             raise ValueError(f'Invalid wave format: {format}')
         if format is None:
             format = self.infer_format_from_value(value)
+        if format is None and max_amplitude is None:
+            raise ValueError(
+                'Cannot encode the value audio/x-wav: nor the format, nor the max ampli'
+                'tude are specified.'
+            )
         if format is None:
             format = self.DEFAULT_FORMAT
+        if max_amplitude is None:
+            max_amplitude = format
 
-        if range != format:
-            if not isinstance(range, str):
-                raise NotImplementedError(
-                    'Range can only take the value of the data type, such as float32.'
-                )
-            data_range_in = self.get_data_range(range)  # noqa
-            data_range_out = self.get_data_range(format)  # noqa
-            raise NotImplementedError(f'The data must be rescaled {range}->{format}')
+        max_amplitude_in = self.asmax_amplitude(max_amplitude)
+        max_amplitude_out = self.asmax_amplitude(format)
+        if max_amplitude_in != max_amplitude_out:
+            value = (max_amplitude_out / max_amplitude_in) * value
 
         value = value.astype(format, copy=False)
 
@@ -69,15 +73,30 @@ class NumpyWaveEncoder:
             return None
         return format
 
-    def get_data_range(self, dtype_name: str) -> tuple[float, float]:
-        if dtype_name.startswith('float'):
-            return -1, 1
-        iinfo = np.iinfo(dtype_name)
-        return iinfo.min, iinfo.max
+    def asmax_amplitude(self, value: float | np.number | str) -> float:
+        if isinstance(value, (int, float, np.number)):
+            return float(value)
+
+        if value not in self.VALID_FORMATS:
+            raise ValueError(f'Cannot infer a maximum amplitude from dtype: {value!r}.')
+
+        if value.startswith('float'):
+            return 1
+        return np.iinfo(value).max
 
 
 class NumpyNPZEncoder:
     def encode(self, value: np.ndarray, encoding: MediaEncoding) -> BytesIO:
         buffer = BytesIO()
         np.savez(buffer, value=value)
+        return buffer
+
+
+class SonoUnoTrackEncoder:
+    VALID_ENCODING_KEYS = {'format'}
+
+    def encode(self, value: sonounolib.Track, encoding: MediaEncoding) -> BytesIO:
+        params = {k: v for k, v in encoding.items() if k in self.VALID_ENCODING_KEYS}
+        buffer = BytesIO()
+        value.to_wav(buffer, **params)  # type: ignore[arg-type]
         return buffer

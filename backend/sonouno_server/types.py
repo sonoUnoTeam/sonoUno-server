@@ -22,8 +22,8 @@ JSONType = bool | int | float | str | dict[str, Any] | list[Any] | None
 
 class MediaEncoding(TypedDict, total=False):
     format: str
-    range: str | tuple[float, float]
     rate: int
+    max_amplitude: str | float
 
 
 JSONSchemaType = TypedDict(

@@ -39,7 +39,7 @@ async def create(job_in: JobIn, user: User = Depends(current_user)):
     executor = job.get_executor(transform)
     values = executor.run()
 
-    job.update_job_schemas_with_values(values)
+    job.update_json_schemas_with_values(values)
     transfer_values(job, values)
 
     job.done_at = datetime.utcnow()

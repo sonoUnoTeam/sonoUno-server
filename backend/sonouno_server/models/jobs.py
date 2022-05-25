@@ -46,7 +46,7 @@ class Job(JobIn, Document):
             output = next(o for o in self.outputs if o.id == output_id)
             yield output, value
 
-    def update_job_schemas_with_values(self, values: Mapping[str, Any]) -> None:
+    def update_json_schemas_with_values(self, values: Mapping[str, Any]) -> None:
         """Merges content type information from the actual output values returned by the
         execution of the job.
 
@@ -54,7 +54,6 @@ class Job(JobIn, Document):
             values: An output id to value mapping.
         """
         for output, value in self.iter_output_values(values):
-            output.json_schema = cast(
-                JSONSchemaType,
-                JSONSchema(output.json_schema).merge_with_value(value),
-            )
+            json_schema = JSONSchema(output.json_schema)
+            json_schema.update_with_value(value)
+            output.json_schema = cast(JSONSchemaType, json_schema)

@@ -116,23 +116,14 @@ class TransformBuilder:
             for n, p in sig.parameters.items()
         ]
 
-    @staticmethod
     def extract_input_from_func(
-        name: str, param: inspect.Parameter, callee_id: str, is_entry_point: bool
+        self, name: str, param: inspect.Parameter, callee_id: str, is_entry_point: bool
     ) -> Input:
         if param.annotation is inspect._empty:
             tp = Any
         else:
             tp = param.annotation
-
-        try:
-            json_schema = JSONSchema(serialization_schema(tp))
-        except Exception as exc:
-            logger.error(
-                f'Could not get serialization schema for input {name} ({tp}): '
-                f'{type(exc).__name__}: {exc}'
-            )
-            json_schema = JSONSchema(serialization_schema(Any))
+        json_schema = self.extract_json_schema(tp, f'input {name}')
 
         # Currently, only the inputs of the entry point can be modified
         modifiable = is_entry_point
@@ -195,18 +186,7 @@ class TransformBuilder:
     def extract_output(
         self, name: str, tp: AnyType, callee_id: str, is_entry_point: bool
     ) -> Output:
-        tp, annotations = self.extract_output_annotations(tp)
-
-        try:
-            json_schema = JSONSchema(serialization_schema(tp))
-        except Exception as exc:
-            logger.exception(
-                f'Could not get serialization schema for output {name} ({tp}): '
-                f'{type(exc).__name__}: {exc}'
-            )
-            json_schema = JSONSchema(serialization_schema(Any))
-        json_schema.update(annotations)
-
+        json_schema = self.extract_json_schema(tp, f'output {name}')
         transfer = self.extract_output_transfer(json_schema, is_entry_point)
 
         output = Output(
@@ -217,8 +197,23 @@ class TransformBuilder:
         )
         return output
 
+    def extract_json_schema(self, tp: AnyType, name: str) -> JSONSchema:
+        tp, annotations = self.extract_annotations(tp)
+
+        try:
+            json_schema = JSONSchema(serialization_schema(tp))
+        except Exception as exc:
+            logger.warning(
+                f'Could not get serialization schema for {name} ({tp}): '
+                f'{type(exc).__name__}: {exc}'
+            )
+            json_schema = JSONSchema(serialization_schema(Any))
+        json_schema.update(annotations)
+        json_schema.update_with_type(tp)
+        return json_schema
+
     @staticmethod
-    def extract_output_annotations(tp: AnyType) -> tuple[AnyType, dict[str, Any]]:
+    def extract_annotations(tp: AnyType) -> tuple[AnyType, dict[str, Any]]:
         origin = get_origin(tp)
         if origin is not Annotated:
             return tp, {}

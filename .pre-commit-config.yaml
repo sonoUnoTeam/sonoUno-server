@@ -85,6 +85,7 @@ repos:
     - numpy
     - pytest-stub
     - scipy
+    - sonounolib
     - streamunolib
     - types-Pillow
     args:

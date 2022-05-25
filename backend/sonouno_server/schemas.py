@@ -5,7 +5,10 @@ from io import BytesIO
 from typing import Any, Mapping
 
 import numpy
-from PIL import Image
+import PIL.Image
+import sonounolib
+
+from sonouno_server.types import AnyType
 
 from .util import merge_dicts_or_nones
 
@@ -117,34 +120,76 @@ class JSONSchema(dict):
         """
         return 'type' in self or 'enum' in self or 'const' in self
 
-    def merge_with_value(self, value: Any) -> JSONSchema:
-        """Combines content type information from a job output value
+    def update_with_type(self, tp: AnyType) -> None:
+        """Updates the content type information from the parameter type hint.
 
         Arguments:
-            schema: The JSON schema of the output.
-            value: The value of the output.
-
-        Returns:
-            A copy of the JSON schema enriched from the content type information that
-            can be inferred from the actual value of the job output.
+            tp: The type hint of the parameter.
         """
-        schema = JSONSchema(self)
-        if schema.has_json_schema():
-            return schema
+        content_type = self.get('contentMediaType')
+        content_type = _merge_content_type_with_type(content_type, tp)
+        if content_type is None:
+            return
+        self['contentMediaType'] = content_type
 
-        requested_content_type = schema.get('contentMediaType')
+    def update_with_value(self, value: Any) -> None:
+        """Updates the content type information from a job output value
+
+        Arguments:
+            value: The value of the output.
+        """
+        if self.has_json_schema():
+            return
+
+        requested_content_type = self.get('contentMediaType')
         content_type = _merge_content_type_with_value(requested_content_type, value)
         if content_type is None:
-            return schema
+            return
 
         try:
             content_type = DEFAULT_CONTENT_TYPE[content_type]
         except KeyError:
             pass
 
-        schema['contentMediaType'] = content_type
+        self['contentMediaType'] = content_type
 
-        return schema
+
+def _merge_content_type_with_type(content_type: str | None, tp: AnyType) -> str | None:
+    """Infers the content type by combining information from the type of the parameter
+    and its potential content media type.
+
+    Arguments:
+        content_type: The potential content media type of the parameter, as stored in
+            the transform, as annotations.
+        tp: The type hint of the parameter.
+
+    Returns:
+        The inferred content media type.
+    """
+    if not isinstance(tp, type):
+        return content_type
+
+    if issubclass(tp, PIL.Image.Image):
+        if content_type is None:
+            content_type = 'image/*'
+        if not content_type.startswith('image/'):
+            raise TypeError(
+                f'The parameter is of type PIL image, which is incompatible with the '
+                f'annotated content media type {content_type!r}.'
+            )
+        return content_type
+
+    if issubclass(tp, sonounolib.Track):
+        if content_type is None:
+            content_type = 'audio/*'
+        if not content_type.startswith('audio/'):
+            raise TypeError(
+                f'The parameter is of type sonounolib.Track, which is incompatible with'
+                f' the annotated content media type {content_type!r}.'
+            )
+        return content_type
+
+    return content_type
 
 
 def _merge_content_type_with_value(content_type: str | None, value: Any) -> str | None:
@@ -159,14 +204,14 @@ def _merge_content_type_with_value(content_type: str | None, value: Any) -> str 
     Returns:
         The MIME type inferred for the transform output.
     """
-    if isinstance(value, Image.Image):
+    if isinstance(value, PIL.Image.Image):
         if content_type is not None and not content_type.startswith('image/'):
             raise TypeError(
                 f'The transform has returned a PIL image, which is incompatible with '
                 f'the MIME type {content_type!r} specified in the source code.'
             )
         if value.format:
-            content_type_from_value = Image.MIME[value.format]
+            content_type_from_value = PIL.Image.MIME[value.format]
         else:
             content_type_from_value = 'image/*'
         if (
@@ -183,6 +228,15 @@ def _merge_content_type_with_value(content_type: str | None, value: Any) -> str 
         if content_type_from_value != 'image/*':
             return content_type_from_value
         return content_type
+
+    elif isinstance(value, sonounolib.Track):
+        if content_type is None:
+            content_type = 'audio/*'
+        if not content_type.startswith('audio/'):
+            raise TypeError(
+                f'The transform has returned a sonoUno Track, which is incompatible '
+                f'with the requested MIME type {content_type!r}.'
+            )
 
     if isinstance(value, (BytesIO, numpy.ndarray)):
         if content_type is None:
