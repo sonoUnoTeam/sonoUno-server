@@ -34,5 +34,7 @@ ARG INSTALL_JUPYTER=false
 RUN bash -c "if [ \"${INSTALL_JUPYTER}\" == 'true' ] ; then pip install jupyterlab ; fi"
 
 COPY . /code
-
 ENV PYTHONPATH=/code
+
+RUN adduser --disabled-password --gecos '' sonouno
+USER sonouno
