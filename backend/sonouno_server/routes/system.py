@@ -8,7 +8,7 @@ from ..models.system import SystemInfo
 router = APIRouter(prefix='/system', tags=['System'])
 
 
-@router.get('', response_model=SystemInfo)
+@router.get('', summary='Gets system information.', response_model=SystemInfo)
 async def get():
-    """Returns the system information."""
+    """Gets system information, such as the backend version."""
     return {'backend_version': backend_version}

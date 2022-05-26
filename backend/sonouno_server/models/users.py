@@ -1,7 +1,6 @@
 """User Pydantic and Document models.
 """
 
-# pylint: disable=too-few-public-methods
 from __future__ import annotations
 
 from datetime import datetime

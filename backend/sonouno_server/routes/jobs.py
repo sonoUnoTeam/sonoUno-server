@@ -14,20 +14,23 @@ router = APIRouter(prefix='/jobs', tags=['Jobs'])
 logger = getLogger(__name__)
 
 
-@router.post('', response_model=Job)
+@router.post(
+    '',
+    summary='Creates a new job.',
+    response_model=Job,
+    responses={404: {'description': 'The job specifies an unknown transform.'}},
+)
 async def create(job_in: JobIn, user: User = Depends(current_user)):
-    """Creates a new job.
+    """Creates a job that will execute a transform.
+
+    The job specifies a transform and its inputs. Upon response,
+    it contains the execution return values of the transform code.
 
     Notes:
-        The schema of the returned outputs are ensured to have at least one of the
-        following properties defined:
-            * `type`
-            * `enum`
-            * `const`
-            * `contentMediaType`
-        It proceeds that if the schema validates against all instances (when `type`,
-        `enum` and `const` are not set), a content type is defined (contentMediaType has
-        the value of a MIME type).
+        The schema property of the outputs in the response either define a valid JSON
+        schema (at least one of the properties `type`, `enum` or `const` are defined),
+        or has a defined content type (stored in the contentMediaType property as a MIME
+        type).
     """
     transform = await Transform.get(document_id=job_in.transform_id)
     if not transform:
@@ -47,9 +50,9 @@ async def create(job_in: JobIn, user: User = Depends(current_user)):
     return job
 
 
-@router.get('/{id}', response_model=Job)
+@router.get('/{id}', summary='Gets a job.', response_model=Job)
 async def get(id: PydanticObjectId, user: User = Depends(current_user)):
-    """Gets a job."""
+    """Gets the job specified by its identifier."""
     job = await Job.get(document_id=id)
     if not job:
         raise HTTPException(404, 'Unknown job.')

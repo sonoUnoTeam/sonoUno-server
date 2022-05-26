@@ -10,9 +10,14 @@ from ..util.password import hash_password
 router = APIRouter(prefix='/users', tags=['Users'])
 
 
-@router.post('', response_model=UserOut)
+@router.post(
+    '',
+    summary='Creates a new user.',
+    response_model=UserOut,
+    responses={409: {'description': 'The email is already in the database.'}},
+)
 async def user_registration(user_auth: UserAuth):
-    """Creates a new user."""
+    """Creates a new user in the database."""
     user = await User.by_email(user_auth.email)
     if user is not None:
         raise HTTPException(409, 'User with that email already exists.')
@@ -22,22 +27,22 @@ async def user_registration(user_auth: UserAuth):
     return user
 
 
-@router.get('/me', response_model=UserOut)
+@router.get('/me', summary='Gets the current user.', response_model=UserOut)
 async def get_user(user: User = Depends(current_user)):
-    """Returns the current user"""
+    """Returns the user specified by the access token."""
     return user
 
 
-@router.patch('/me', response_model=UserOut)
+@router.patch('/me', summary='Update the current user.', response_model=UserOut)
 async def update_user(update: UserUpdate, user: User = Depends(current_user)):
-    """Update allowed user fields"""
+    """Updates the user specified by the access token."""
     user = user.copy(update=update.dict(exclude_unset=True))
     await user.save()
     return user
 
 
-@router.delete('/me')
+@router.delete('/me', summary='Deletes the current user.')
 async def delete_user(user: User = Depends(current_user)):
-    """Delete current user"""
+    """Deletes the user specified by the access token."""
     await user.delete()
     return Response(status_code=204)

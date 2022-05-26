@@ -3,6 +3,7 @@ from typing import Any, Iterator, Mapping, Sequence, cast
 
 from beanie import Document, PydanticObjectId
 from pydantic import BaseModel
+from pydantic import Field as F
 
 from ..executors import LocalExecutor
 from ..models.transforms import Transform
@@ -12,16 +13,31 @@ from .variables import Input, InputIn, OutputIn, OutputWithValue
 
 
 class JobIn(BaseModel):
-    transform_id: PydanticObjectId
-    inputs: Sequence[InputIn] = []
-    outputs: Sequence[OutputIn] = []
+    transform_id: PydanticObjectId = F(
+        title='The identifier of the transform to be executed.'
+    )
+    inputs: Sequence[InputIn] = F([], title='Specifications of the transform inputs.')
+    outputs: Sequence[OutputIn] = F([], title='Specifications fo the transform outputs')
+
+    class Config:
+        schema_extra = {
+            'description': 'Input to create a job.',
+            'examples': [
+                {
+                    'transform_id': '628f4b1f2adff4274a708523',
+                    'inputs': [{'id': 'pipeline.repeat', 'value': 2}],
+                },
+            ],
+        }
 
 
 class Job(JobIn, Document):
-    user_id: PydanticObjectId
-    done_at: datetime | None = None
-    inputs: Sequence[Input] = []
-    outputs: Sequence[OutputWithValue] = []
+    user_id: PydanticObjectId = F(title='The user requesting the job.')
+    done_at: datetime | None = F(None, title='Date and time when the job finished.')
+    inputs: Sequence[Input] = F([], title='The specified inputs.')
+    outputs: Sequence[OutputWithValue] = F(
+        [], title='The resulting fully specified outputs.'
+    )
 
     @property
     def created_at(self) -> datetime:
@@ -30,8 +46,51 @@ class Job(JobIn, Document):
             raise RuntimeError('Job has not been inserted in the database yet.')
         return self.id.generation_time
 
+    class Config:
+        schema_extra = {
+            'description': 'The job, as stored in the database.',
+            'examples': [
+                {
+                    '_id': '628f4d4255358f834b9df030',
+                    'transform_id': '628f4b1f2adff4274a708523',
+                    'inputs': [
+                        {
+                            'id': 'pipeline.repeat',
+                            'value': 2,
+                            'name': 'repeat',
+                            'schema': {
+                                '$schema': 'http://json-schema.org/draft/2020-12/schema#',  # noqa: E501
+                                'type': 'integer',
+                                'default': True,
+                            },
+                            'required': False,
+                            'modifiable': True,
+                        }
+                    ],
+                    'outputs': [
+                        {
+                            'id': 'pipeline.0',
+                            'schema': {
+                                '$schema': 'http://json-schema.org/draft/2020-12/schema#',  # noqa: E501
+                                'contentMediaType': 'audio/x-wav',
+                                'x-contentMediaEncoding': {
+                                    'format': 'int16',
+                                    'rate': 44100,
+                                },
+                            },
+                            'transfer': 'uri',
+                            'name': '0',
+                            'value': 'http://api.sonouno.org.ar:9000/jobs/job-628f4d4255358f834b9df030/pipeline-0-726141.wav',  # noqa: E501
+                        }
+                    ],
+                    'user_id': '628f0baa98325a42409ae3bd',
+                    'done_at': '2022-05-26T09:49:55.058357',
+                }
+            ],
+        }
+
     def get_executor(self, transform: Transform) -> LocalExecutor:
-        """Returns transform executor."""
+        """Returns the transform executor."""
         return LocalExecutor(self, transform)
 
     def iter_output_values(
