@@ -100,3 +100,6 @@ celerybeat.pid
 .mypy_cache/
 .dmypy.json
 dmypy.json
+
+# virtual envs
+venv/
