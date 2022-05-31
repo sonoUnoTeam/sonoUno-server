@@ -1,0 +1,29 @@
+site_name: sonoUno Library
+repo_name: pchanial/sonouno-library
+repo_url: https://gitlab.com/pchanial/sonouno-library
+
+theme:
+  name: material
+
+nav:
+- index.md
+- getting_started.md
+- contributing.md
+
+markdown_extensions:
+- pymdownx.highlight:
+    anchor_linenums: true
+- pymdownx.inlinehilite
+- pymdownx.snippets
+- pymdownx.superfences
+- markdown_include.include:
+    base_path: examples
+- toc:
+    permalink: True
+- admonition
+
+plugins:
+- search
+- exclude:
+    glob:
+    - requirements.txt

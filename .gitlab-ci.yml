@@ -49,6 +49,23 @@ build-and-publish:
     - docker push ${MONGOEXPRESS_IMAGE}
     - docker push ${NGINX_IMAGE}
 
+pages:
+  stage: deploy
+  interruptible: true
+  image: python:3.10
+  before_script:
+  - pip install poetry
+  - cd backend
+  - poetry install
+  script:
+  - poetry run mkdocs build --strict --verbose
+  - mv site ../public
+  artifacts:
+    paths:
+    - public
+  rules:
+  - if: $CI_COMMIT_REF_NAME == $CI_DEFAULT_BRANCH
+
 deploy-staging:
   stage: deploy
   interruptible: true
@@ -80,5 +97,3 @@ deploy-staging:
   after_script:
     - DOCKER_HOST=$OLD_DOCKER_HOST
     - docker context use default
-  only:
-    - main
