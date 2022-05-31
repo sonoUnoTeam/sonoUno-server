@@ -59,10 +59,10 @@ pages:
   - poetry install
   script:
   - poetry run mkdocs build --strict --verbose
-  - mv site public
+  - mv site ../public
   artifacts:
     paths:
-    - backend/public
+    - public
   rules:
   - if: $CI_COMMIT_REF_NAME == $CI_DEFAULT_BRANCH
 
