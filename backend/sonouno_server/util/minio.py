@@ -11,6 +11,10 @@ def make_public_bucket(client: Minio, bucket_name: str) -> None:
     if not client.bucket_exists(bucket_name):
         client.make_bucket(bucket_name)
 
+    return
+
+    # The following doesn't set the bucket policy as public...
+
     policy = {
         'Version': '2012-10-17',
         'Statement': [],
