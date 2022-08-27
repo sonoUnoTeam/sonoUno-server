@@ -1,3 +1,7 @@
+[build-system]
+requires = ["poetry_core>=1.1.0", "poetry-dynamic-versioning"]
+build-backend = "poetry.core.masonry.api"
+
 [tool.poetry]
 name = "sonouno_server"
 version = "0.0.0"
@@ -38,10 +42,6 @@ enable = true
 dirty = true
 bump = true
 style = "pep440"
-
-[build-system]
-requires = ["poetry>=1.1.0", "poetry-dynamic-versioning"]
-build-backend = "poetry.masonry.api"
 
 [tool.isort]
 known_first_party = ["sonouno_server", "streamunolib"]
