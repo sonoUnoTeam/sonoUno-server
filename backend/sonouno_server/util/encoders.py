@@ -1,8 +1,9 @@
 from io import BytesIO
 
 import numpy as np
-import sonounolib
 from scipy.io import wavfile
+
+import sonounolib
 
 from ..types import JSONSchemaType, MediaEncoding
 

@@ -8,8 +8,9 @@ from typing import Any, cast
 from uuid import uuid4
 
 import numpy
-import sonounolib
 from fastapi import HTTPException
+
+import sonounolib
 
 from ..app import app
 from ..config import CONFIG

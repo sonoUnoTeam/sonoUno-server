@@ -44,7 +44,7 @@ bump = true
 style = "pep440"
 
 [tool.isort]
-known_first_party = ["sonouno_server", "streamunolib"]
+known_first_party = ["sonouno_server", "sonounolib", "streamunolib"]
 
 [[tool.mypy.overrides]]
 module = [

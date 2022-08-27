@@ -1,8 +1,8 @@
 from typing import Annotated
 
 import numpy as np
-from sonounolib import Track
 
+from sonounolib import Track
 from streamunolib import exposed, media_type
 
 

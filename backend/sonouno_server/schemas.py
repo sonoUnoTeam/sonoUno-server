@@ -7,8 +7,8 @@ from typing import Any
 
 import numpy
 import PIL.Image
-import sonounolib
 
+import sonounolib
 from sonouno_server.types import AnyType
 
 from .util import merge_dicts_or_nones
