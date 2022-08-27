@@ -51,6 +51,7 @@ module = [
     "decouple",
     "fastapi_jwt_auth.*",
     "fastapi_mail",
+    "httpx",
     "minio",
     "motor.*",
     "networkx",
