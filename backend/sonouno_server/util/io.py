@@ -2,8 +2,9 @@ import json
 import logging
 import mimetypes
 import pickle
+from collections.abc import Mapping
 from io import BytesIO
-from typing import Any, Mapping, cast
+from typing import Any, cast
 from uuid import uuid4
 
 import numpy

@@ -1,5 +1,6 @@
+from collections.abc import Iterator, Mapping, Sequence
 from datetime import datetime
-from typing import Any, Iterator, Mapping, Sequence, cast
+from typing import Any, cast
 
 from beanie import Document, PydanticObjectId
 from pydantic import BaseModel

@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 import typing
-from typing import Any, Mapping
+from collections.abc import Mapping
+from typing import Any
 
 from fastapi import HTTPException
 

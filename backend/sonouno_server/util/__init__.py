@@ -1,4 +1,5 @@
-from typing import Mapping, TypeVar, cast
+from collections.abc import Mapping
+from typing import TypeVar, cast
 
 __all__ = ['merge_dicts_or_none']
 

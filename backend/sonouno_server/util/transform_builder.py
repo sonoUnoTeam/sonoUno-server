@@ -1,9 +1,10 @@
 import inspect
 import json
 import logging
+from collections.abc import Mapping
 from http.client import HTTPException
 from types import FunctionType
-from typing import Annotated, Any, Mapping, cast, get_args, get_origin
+from typing import Annotated, Any, cast, get_args, get_origin
 
 from apischema.json_schema import serialization_schema
 

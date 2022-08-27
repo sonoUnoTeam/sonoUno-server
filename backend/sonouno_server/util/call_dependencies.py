@@ -1,6 +1,7 @@
 import ast
+from collections.abc import Iterable
 from itertools import product
-from typing import Any, Iterable
+from typing import Any
 
 import networkx as nx
 from fastapi import HTTPException

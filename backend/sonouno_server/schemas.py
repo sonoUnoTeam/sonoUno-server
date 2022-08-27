@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 import re
+from collections.abc import Mapping
 from io import BytesIO
-from typing import Any, Mapping
+from typing import Any
 
 import numpy
 import PIL.Image
