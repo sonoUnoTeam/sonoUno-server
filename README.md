@@ -20,7 +20,7 @@ This app provides a basic account API on top of a [MongoDB]() store with the fol
 
 ## Frontend Requirements
 
-* Node.js (with `npm`).
+* Not implemented in this repository
 
 ## Backend local development
 
@@ -36,9 +36,11 @@ Frontend, built with Docker, with routes handled based on the path: http://local
 
 Backend, JSON based web API based on OpenAPI: http://localhost:8001/api/
 
-Automatic interactive documentation with Swagger UI (from the OpenAPI backend): http://localhost:8001/docs
+Automatic interactive documentation with Swagger UI (from the OpenAPI backend): http://localhost/docs
 
-Alternative automatic documentation with ReDoc (from the OpenAPI backend): http://localhost:8001/redoc
+Alternative automatic documentation with ReDoc (from the OpenAPI backend): http://localhost/redoc
+
+The MinIO servers: http://localhost:9001
 
 mongo-express, MongoDB web administration: http://localhost:8081
 
