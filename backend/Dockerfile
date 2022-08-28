@@ -19,6 +19,6 @@ RUN pip install fastapi-mail==1.0.2
 # Make some libraries available in the transform interpretor.
 # This is a temporary solution, code execution should be performed in a container,
 # not in the server's process.
-RUN pip install requests pandas astropy
+RUN pip install requests pandas astropy sonouno-lhc
 
 COPY scripts scripts

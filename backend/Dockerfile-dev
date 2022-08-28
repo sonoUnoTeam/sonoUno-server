@@ -25,7 +25,7 @@ RUN poetry run pip install fastapi-mail==1.0.2
 # Make some libraries available in the transform interpretor.
 # This is a temporary solution, code execution should be performed in a container,
 # not in the server's process.
-RUN bash -c "poetry run pip install requests pandas astropy"
+RUN bash -c "poetry run pip install requests pandas astropy sonouno-lhc"
 
 # For development, Jupyter remote kernel, Hydrogen
 # Using inside the container:
