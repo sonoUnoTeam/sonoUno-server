@@ -1,0 +1,57 @@
+name: Build
+
+on:
+  push:
+    branches:
+    - main
+  pull_request:
+    branches:
+    - main
+  release:
+    types: [published]
+
+jobs:
+
+  build:
+    name: Build sdist and wheel
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
+
+    - run: |
+        cd backend
+        pipx run build
+
+    - uses: actions/upload-artifact@v3
+      with:
+        name: sdist-wheel
+        path: |
+          backend/dist/*.tar.gz
+          backend/dist/*.whl
+
+    - uses: actions/download-artifact@v3
+      id: download
+      with:
+        name: sdist-wheel
+
+    - name: 'Echo download path'
+      run: echo ${{steps.download.outputs.download-path}}
+
+  upload_all:
+    needs: [build]
+    runs-on: ubuntu-latest
+    if: github.event_name == 'release' && github.event.action == 'published'
+    steps:
+    - uses: actions/download-artifact@v3
+      id: download
+      with:
+        name: sdist-wheel
+
+    - name: 'Echo download path'
+      run: echo ${{steps.download.outputs.download-path}}
+
+    - uses: pypa/gh-action-pypi-publish@v1.5.1
+      with:
+        password: ${{ secrets.PYPI_API_TOKEN }}
